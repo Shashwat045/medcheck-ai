@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedCheck AI - Professional Symptom Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .chat-container {
+            height: calc(100vh - 180px);
+        }
+
+        .message-bot {
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-user {
+            border-bottom-right-radius: 2px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-morphism px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <i data-lucide="activity" class="w-6 h-6"></i>
+            </div>
+            <span class="text-xl font-bold tracking-tight text-slate-800">MedCheck <span
+                    class="text-blue-600">AI</span></span>
+        </div>
+        <div class="hidden md:flex gap-6 text-sm font-medium text-slate-600">
+            <a href="#" class="hover:text-blue-600 transition-colors">How it works</a>
+            <button id="nav-tracker-btn"
+                onclick="typeof showTracker === 'function' ? showTracker() : console.error('showTracker not defined')"
+                class="hover:text-blue-600 transition-colors flex items-center gap-1">
+                <i data-lucide="activity-square" class="w-4 h-4"></i> Tracker
+            </button>
+            <button id="nav-profile-btn"
+                onclick="typeof showProfile === 'function' ? showProfile() : console.error('showProfile not defined')"
+                class="hover:text-blue-600 transition-colors flex items-center gap-1">
+                <i data-lucide="user-circle" class="w-4 h-4"></i> Profile
+            </button>
+            <a href="#" class="hover:text-blue-600 transition-colors">Safety</a>
+        </div>
+        <script>window.onerror = function (m, u, l) { console.log("GLOBAL ERROR:", m, "at", u, ":", l); };</script>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="pt-24 pb-12 px-4 w-full mx-auto min-h-screen flex flex-col justify-center">
+
+        <!-- SECTION: Landing / Hero -->
+        <div id="view-landing" class="fade-in text-center space-y-8 max-w-4xl mx-auto w-full">
+            <div class="space-y-4">
+                <h1 class="text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                    Smart health checks,<br><span class="text-blue-600">powered by AI.</span>
+                </h1>
+                <p class="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                    A clinical-grade conversational assistant to help you understand your symptoms and know where to go
+                    next.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 text-left">
+                <div class="glass-morphism p-6 rounded-2xl space-y-3 stagger-1">
+                    <i data-lucide="shield-check" class="text-blue-600 w-8 h-8"></i>
+                    <h3 class="font-bold text-slate-800">Safe & Private</h3>
+                    <p class="text-sm text-slate-500">Your health data is encrypted and never shared without consent.
+                    </p>
+                </div>
+                <div class="glass-morphism p-6 rounded-2xl space-y-3 stagger-2">
+                    <i data-lucide="message-square" class="text-blue-600 w-8 h-8"></i>
+                    <h3 class="font-bold text-slate-800">Conversational</h3>
+                    <p class="text-sm text-slate-500">Natural dialogue adapted to your specific health background.</p>
+                </div>
+                <div class="glass-morphism p-6 rounded-2xl space-y-3 stagger-3">
+                    <i data-lucide="stethoscope" class="text-blue-600 w-8 h-8"></i>
+                    <h3 class="font-bold text-slate-800">Triage Expert</h3>
+                    <p class="text-sm text-slate-500">Clear guidance on whether to see a GP or visit the ER.</p>
+                </div>
+            </div>
+
+            <button onclick="showDisclaimer()"
+                class="bg-blue-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                Start Symptoms Check
+            </button>
+        </div>
+
+        <!-- SECTION: Body Part Selector -->
+        <div id="view-body-map" class="hidden fade-in text-center space-y-8 max-w-4xl mx-auto w-full">
+            <div class="space-y-4">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Where is the discomfort?</h2>
+                <p class="text-slate-600">Select the primary area affected to help us understand better.</p>
+            </div>
+
+            <div class="body-container relative">
+                <svg viewBox="0 0 200 500" class="w-full h-auto">
+                    <!-- Simplified Human Body Silhouette -->
+                    <path id="body-head" d="M100,20 c15,0 25,10 25,25 s-10,25 -25,25 s-25,-10 -25,-25 s10,-25 25,-25"
+                        class="body-part" onclick="selectBodyPart('Head')" />
+                    <path id="body-chest" d="M75,75 h50 l10,80 h-70 z" class="body-part"
+                        onclick="selectBodyPart('Chest')" />
+                    <path id="body-abdomen" d="M75,155 h50 l-5,100 h-40 z" class="body-part"
+                        onclick="selectBodyPart('Abdomen')" />
+                    <path id="body-arm-l" d="M70,80 l-40,120 l20,10 l30,-100 z" class="body-part"
+                        onclick="selectBodyPart('Left Arm')" />
+                    <path id="body-arm-r" d="M130,80 l40,120 l-20,10 l-30,-100 z" class="body-part"
+                        onclick="selectBodyPart('Right Arm')" />
+                    <path id="body-leg-l" d="M80,255 l-10,180 l30,5 l15,-180 z" class="body-part"
+                        onclick="selectBodyPart('Left Leg')" />
+                    <path id="body-leg-r" d="M120,255 l10,180 l-30,5 l-15,-180 z" class="body-part"
+                        onclick="selectBodyPart('Right Leg')" />
+                </svg>
+                <div id="selected-part-label" class="mt-4 font-bold text-blue-600 h-6"></div>
+            </div>
+
+            <div class="flex justify-center gap-4">
+                <button onclick="startChatFromMap()" id="btn-map-next" disabled
+                    class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold opacity-50 cursor-not-allowed transition-all">
+                    Next: Describe Symptoms
+                </button>
+                <button onclick="showLanding()" class="px-6 py-3 text-slate-500 font-medium hover:text-slate-800">
+                    Back
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION: Medical Disclaimer -->
+        <div id="view-disclaimer" class="hidden fade-in max-w-2xl mx-auto">
+            <div class="glass-morphism p-8 rounded-3xl border-2 border-amber-100 space-y-6">
+                <div class="flex items-center gap-3 text-amber-600">
+                    <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+                    <h2 class="text-2xl font-bold">Medical Disclaimer</h2>
+                </div>
+
+                <div class="space-y-4 text-slate-600 leading-relaxed">
+                    <p>MedCheck AI is for <strong>informational purposes only</strong>. It is not intended to provide a
+                        medical diagnosis or substitute for professional medical advice.</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Do not use in case of a medical emergency.</li>
+                        <li>Always consult with a qualified healthcare professional.</li>
+                        <li>Responses are generated by AI and may be inaccurate.</li>
+                    </ul>
+                </div>
+
+                <div class="pt-4 flex flex-col sm:flex-row gap-4">
+                    <button onclick="startChat()"
+                        class="flex-1 bg-slate-900 text-white px-6 py-4 rounded-xl font-bold hover:bg-black transition-all">
+                        I Understand & Accept
+                    </button>
+                    <button onclick="showLanding()" class="px-6 py-4 text-slate-500 font-medium hover:text-slate-800">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: User Profile Modal -->
+        <div id="view-profile"
+            class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div
+                class="glass-morphism p-0 rounded-3xl w-full max-w-lg overflow-hidden fade-in shadow-2xl bg-white/95 flex flex-col max-h-[90vh]">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-slate-900">Health Profile</h3>
+                    <button onclick="closeProfile()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x"
+                            class="w-6 h-6"></i></button>
+                </div>
+
+                <!-- Profile Tabs -->
+                <div class="flex border-b border-slate-100 px-4 bg-slate-50/50">
+                    <div class="profile-tab active" onclick="switchProfileTab('general')">General</div>
+                    <div class="profile-tab" onclick="switchProfileTab('medical')">Medical</div>
+                    <div class="profile-tab" onclick="switchProfileTab('lifestyle')">History & Lifestyle</div>
+                </div>
+
+                <div class="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                    <!-- Tab: General -->
+                    <div id="profile-tab-general" class="tab-content active space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Full Name</label>
+                                <input type="text" id="profile-name" placeholder="Enter name" class="form-input">
+                            </div>
+                            <div>
+                                <label class="form-label">Age Range</label>
+                                <select id="profile-age" class="form-input">
+                                    <option value="0-17">0-17 (Pediatric)</option>
+                                    <option value="18-35">18-35</option>
+                                    <option value="36-50">36-50</option>
+                                    <option value="51-65">51-65</option>
+                                    <option value="65+">65+</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Gender</label>
+                                <select id="profile-gender" onchange="togglePregnancyUI()" class="form-input">
+                                    <option value="Unspecified">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                    <option value="Private">Prefer not to say</option>
+                                </select>
+                            </div>
+                            <div id="pregnancy-ui" class="hidden">
+                                <label class="form-label">Are you currently pregnant?</label>
+                                <div class="segmented-control">
+                                    <div class="segment-btn active" onclick="setPregnancy(true)">Yes</div>
+                                    <div class="segment-btn" onclick="setPregnancy(false)">No</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Medical -->
+                    <div id="profile-tab-medical" class="tab-content space-y-4">
+                        <div>
+                            <label class="form-label">Chronic Conditions</label>
+                            <div id="conditions-grid" class="grid grid-cols-2 gap-2 text-sm">
+                                <!-- Existing conditions + additions -->
+                                <label
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                    <input type="checkbox" value="Diabetes"
+                                        class="condition-checkbox w-4 h-4 rounded border-slate-300 text-blue-600">
+                                    <span class="text-slate-700">Diabetes</span>
+                                </label>
+                                <label
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                    <input type="checkbox" value="Hypertension"
+                                        class="condition-checkbox w-4 h-4 rounded border-slate-300 text-blue-600">
+                                    <span class="text-slate-700">Hypertension (BP)</span>
+                                </label>
+                                <label
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                    <input type="checkbox" value="Asthma"
+                                        class="condition-checkbox w-4 h-4 rounded border-slate-300 text-blue-600">
+                                    <span class="text-slate-700">Asthma</span>
+                                </label>
+                                <label
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                    <input type="checkbox" value="Heart Disease"
+                                        class="condition-checkbox w-4 h-4 rounded border-slate-300 text-blue-600">
+                                    <span class="text-slate-700">Heart Disease</span>
+                                </label>
+                                <label
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                    <input type="checkbox" value="Kidney Disease"
+                                        class="condition-checkbox w-4 h-4 rounded border-slate-300 text-blue-600">
+                                    <span class="text-slate-700">Kidney Disease</span>
+                                </label>
+                                <label
+                                    class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+                                    <input type="checkbox" value="COPD"
+                                        class="condition-checkbox w-4 h-4 rounded border-slate-300 text-blue-600">
+                                    <span class="text-slate-700">COPD/Lung issue</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Current Medications</label>
+                            <textarea id="profile-meds" placeholder="List any medicine you take regularly"
+                                class="form-input h-20 resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="form-label">Known Allergies</label>
+                            <textarea id="profile-allergies" placeholder="Food, drug, or environmental allergies"
+                                class="form-input h-20 resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Tab: History & Lifestyle -->
+                    <div id="profile-tab-lifestyle" class="tab-content space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label class="form-label">Smoking</label>
+                                <div class="segmented-control" id="lifestyle-smoking">
+                                    <div class="segment-btn active" onclick="setLifestyle('smoking', 'Never')">Never
+                                    </div>
+                                    <div class="segment-btn" onclick="setLifestyle('smoking', 'Frequent')">Frequent
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label">Alcohol</label>
+                                <div class="segmented-control" id="lifestyle-alcohol">
+                                    <div class="segment-btn active" onclick="setLifestyle('alcohol', 'Never')">Never
+                                    </div>
+                                    <div class="segment-btn" onclick="setLifestyle('alcohol', 'Frequent')">Frequent
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Average Sleep</label>
+                            <div class="segmented-control" id="lifestyle-sleep">
+                                <div class="segment-btn active" onclick="setLifestyle('sleep', '< 6h')">&lt; 6h</div>
+                                <div class="segment-btn" onclick="setLifestyle('sleep', '6-8h')">6-8h</div>
+                                <div class="segment-btn" onclick="setLifestyle('sleep', '> 8h')">&gt; 8h</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-col gap-4">
+                    <button onclick="saveProfile()"
+                        class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all">Save
+                        Changes</button>
+                    <!-- History Preview -->
+                    <label class="form-label mb-0">Recent History</label>
+                    <div id="history-container" class="flex gap-2 overflow-x-auto py-1">
+                        <p id="no-history" class="text-[10px] text-slate-400 italic">No history.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: Emergency Alert Modal -->
+        <div id="view-emergency-alert"
+            class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4 bg-red-900/60 backdrop-blur-md fade-in">
+            <div
+                class="glass-morphism p-0 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl bg-white border-2 border-red-500 flex flex-col items-center text-center">
+                <div class="p-8 w-full bg-red-50 flex flex-col items-center justify-center border-b border-red-100">
+                    <div
+                        class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-4 animate-[pulse_1.5s_ease-in-out_infinite]">
+                        <i data-lucide="alert-octagon" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-red-600 tracking-tight">MEDICAL EMERGENCY</h2>
+                </div>
+                <div class="p-8 space-y-4 w-full">
+                    <p class="text-slate-700 font-medium leading-relaxed">
+                        Based on your symptoms, you may be experiencing a life-threatening medical emergency.
+                    </p>
+                    <p class="text-slate-500 font-bold uppercase tracking-widest text-xs">
+                        Please go to the nearest ER or call for help immediately.
+                    </p>
+                    <div class="pt-6 flex flex-col gap-3 w-full">
+                        <a href="tel:911"
+                            class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg flex items-center justify-center gap-2">
+                            <i data-lucide="phone" class="w-5 h-5"></i> Call 911 Now
+                        </a>
+                        <button onclick="closeEmergencyAlert()"
+                            class="w-full py-2 text-slate-500 font-medium hover:text-slate-800 transition-colors text-sm">
+                            I Understand, Close Alert
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: Health Tracker Dashboard -->
+        <div id="view-health-tracker" class="hidden fade-in w-full max-w-4xl mx-auto space-y-6 px-2 sm:px-0">
+
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Health Tracker & Logs</h2>
+                <button onclick="generatePDFReport()"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-2 text-sm">
+                    <i data-lucide="file-down" class="w-4 h-4"></i> Export PDF Report
+                </button>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 w-full">
+                <!-- Log Entry Widgets -->
+                <div class="space-y-6">
+                    <!-- Fever -->
+                    <div class="glass-morphism p-6 rounded-3xl border border-slate-100 shadow-sm bg-white/70">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div
+                                class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                                <i data-lucide="thermometer" class="w-4 h-4"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800">Log Temperature</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="number" id="tracker-fever" placeholder="e.g. 98.6" step="0.1"
+                                class="form-input flex-grow">
+                            <select id="tracker-fever-unit" class="form-input w-20">
+                                <option value="F">°F</option>
+                                <option value="C">°C</option>
+                            </select>
+                            <button onclick="addFeverLog()"
+                                class="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold hover:bg-orange-600 transition-all flex-shrink-0">Log</button>
+                        </div>
+                    </div>
+
+                    <!-- Pain -->
+                    <div class="glass-morphism p-6 rounded-3xl border border-slate-100 shadow-sm bg-white/70">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div
+                                class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                                <i data-lucide="activity" class="w-4 h-4"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800">Log Pain Level</h3>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <div class="flex justify-between text-xs font-bold text-slate-400"><span>1
+                                    (Mild)</span><span>10 (Severe)</span></div>
+                            <input type="range" id="tracker-pain" min="1" max="10" value="1"
+                                class="w-full accent-rose-500">
+                            <div class="flex justify-between items-center mt-2">
+                                <span id="tracker-pain-display" class="font-bold text-lg text-rose-600">Level:
+                                    1</span>
+                                <button onclick="addPainLog()"
+                                    class="bg-rose-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-rose-600 transition-all">Save
+                                    Pain</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trends Graph -->
+                <div class="glass-morphism p-6 rounded-3xl border border-slate-100 shadow-sm bg-white/70 flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                <i data-lucide="line-chart" class="w-4 h-4"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800">7-Day Trends</h3>
+                        </div>
+                        <button onclick="clearTrackerData()" title="Clear Graph Data"
+                            class="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-slate-100">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="flex-grow relative h-48 w-full flex items-center justify-center">
+                        <canvas id="healthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Summary for Report -->
+            <div class="glass-morphism p-6 rounded-3xl border border-slate-100 shadow-sm bg-white/70">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
+                        <i data-lucide="history" class="w-4 h-4"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800">Assessment History Log</h3>
+                </div>
+                <div id="tracker-history-list" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar p-2">
+                    <p class="text-sm text-slate-400 italic">No previous assessments found in your history log.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-center mt-4">
+                <button onclick="showLanding()" class="px-6 py-3 text-slate-500 font-medium hover:text-slate-800">
+                    Back to Home
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden PDF Template -->
+        <div id="pdf-report-template"
+            class="hidden p-8 bg-white text-slate-800 absolute top-[-9999px] left-[-9999px] w-[800px]">
+            <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-end">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-slate-900">MedCheck AI</h1>
+                    <p class="text-lg text-slate-600 font-medium">Official Patient Health Report</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold" id="pdf-date"></p>
+                    <p class="text-sm">Confidential Document</p>
+                </div>
+            </div>
+
+            <div class="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h2 class="text-xl font-bold mb-3 text-slate-800 border-b border-slate-200 pb-2">Profile Overview
+                </h2>
+                <div class="grid grid-cols-2 gap-4 text-sm" id="pdf-profile-data"></div>
+            </div>
+
+            <div class="mb-6 page-break-after">
+                <h2 class="text-xl font-bold mb-3 text-slate-800 border-b border-slate-200 pb-2">Vitals & Trends
+                </h2>
+                <div class="h-[300px] w-full mt-4" id="pdf-chart-container">
+                    <!-- Chart Clone Injected Here -->
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <h2 class="text-xl font-bold mb-3 text-slate-800 border-b border-slate-200 pb-2">Assessment History
+                </h2>
+                <div class="space-y-4 text-sm" id="pdf-history-data"></div>
+            </div>
+        </div>
+
+        <!-- SECTION: Chat Interface -->
+        <div id="view-chat" class="hidden fade-in flex-grow flex flex-col h-full w-full">
+            <div class="glass-morphism rounded-3xl overflow-hidden flex flex-col h-[calc(100vh-140px)] w-full">
+                <!-- Chat Header -->
+                <div class="px-4 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white/50">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                            <i data-lucide="bot" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">MedCheck Assistant</h4>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                <span
+                                    class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Online</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="resetChat()"
+                        class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Chat
+                    </button>
+                </div>
+
+                <!-- Chat Body -->
+                <div id="chat-messages" class="flex-grow overflow-y-auto p-6 space-y-6 bg-slate-50/30">
+                    <!-- Initial Bot Message -->
+                    <div class="flex gap-4">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-blue-600">
+                            <i data-lucide="bot" class="w-4 h-4"></i>
+                        </div>
+                        <div class="message-bot glass-morphism p-4 rounded-2xl max-w-[85%] shadow-sm">
+                            <p class="text-sm leading-relaxed text-slate-700">Hello. I'm your MedCheck assistant. I
+                                can
+                                help you evaluate your symptoms. What seems to be the problem today?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="p-4 sm:p-6 border-t border-slate-200 bg-white/50">
+                    <div id="symptom-tags" class="flex flex-wrap gap-2 mb-3"></div>
+
+                    <!-- Symptom Detail Modal (Hidden by default) -->
+                    <div id="symptom-details-ui"
+                        class="hidden mb-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 fade-in">
+                        <h5 id="detail-symptom-name" class="font-bold text-blue-800 mb-3 capitalize">Symptom Details
+                        </h5>
+                        <div class="space-y-4">
+                            <div>
+                                <label
+                                    class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2 block">Severity</label>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="setDetailSeverity('mild')" data-severity="mild"
+                                        class="severity-btn flex-1 py-2 px-3 rounded-lg bg-white border border-slate-200 text-xs font-semibold hover:border-blue-300 transition-all active:scale-95">Mild</button>
+                                    <button type="button" onclick="setDetailSeverity('moderate')"
+                                        data-severity="moderate"
+                                        class="severity-btn flex-1 py-2 px-3 rounded-lg bg-white border border-slate-200 text-xs font-semibold hover:border-blue-300 transition-all active:scale-95">Moderate</button>
+                                    <button type="button" onclick="setDetailSeverity('severe')" data-severity="severe"
+                                        class="severity-btn flex-1 py-2 px-3 rounded-lg bg-white border border-slate-200 text-xs font-semibold hover:border-blue-300 transition-all active:scale-95">Severe</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    class="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2 block">Duration</label>
+                                <select id="detail-duration"
+                                    class="w-full p-2 rounded-lg border border-slate-200 text-xs outline-none bg-white">
+                                    <option value="Just started">Just started</option>
+                                    <option value="A few hours">A few hours</option>
+                                    <option value="1 day">1 day</option>
+                                    <option value="2-3 days">2-3 days</option>
+                                    <option value="About a week">About a week</option>
+                                    <option value="More than a month">More than a month</option>
+                                </select>
+                            </div>
+                            <button onclick="finishSymptomAdd()"
+                                class="w-full bg-blue-600 text-white py-2 rounded-xl font-bold text-xs hover:bg-blue-700 transition-all">Add
+                                Symptom</button>
+                        </div>
+                    </div>
+
+                    <form id="chat-form" class="relative group flex gap-2">
+                        <div class="relative flex-grow">
+                            <input type="text" id="user-input" autocomplete="off"
+                                placeholder="Describe your symptoms..."
+                                class="w-full pl-4 sm:pl-6 pr-12 py-3 sm:py-4 rounded-2xl bg-white border border-slate-200 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-slate-800 placeholder-slate-400 shadow-sm">
+                            <button type="button" id="voice-btn" onclick="toggleVoice()"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
+                                <i data-lucide="mic" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <button type="submit"
+                            class="w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center hover:bg-blue-700 transition-colors shadow-md flex-shrink-0">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                    <p class="mt-3 text-[10px] text-center text-slate-400 font-medium uppercase tracking-widest">
+                        AI-generated guidance. Consult a doctor for medical diagnosis.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // DOM Elements
+        const views = {
+            landing: document.getElementById('view-landing'),
+            disclaimer: document.getElementById('view-disclaimer'),
+            bodyMap: document.getElementById('view-body-map'),
+            chat: document.getElementById('view-chat'),
+            profile: document.getElementById('view-profile'),
+            tracker: document.getElementById('view-health-tracker')
+        };
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+
+        // State & Data
+        let userProfile = JSON.parse(localStorage.getItem('medcheck_profile')) || {
+            name: '',
+            gender: 'Unspecified',
+            age: '18-35',
+            conditions: [],
+            isPregnant: false,
+            meds: '',
+            allergies: '',
+            lifestyle: { smoking: 'Never', alcohol: 'Never', sleep: '6-8h' }
+        };
+        let history = JSON.parse(localStorage.getItem('medcheck_history')) || [];
+        let feverLogs = JSON.parse(localStorage.getItem('medcheck_fever_log')) || [];
+        let painLogs = JSON.parse(localStorage.getItem('medcheck_pain_log')) || [];
+        let modelWeights = JSON.parse(localStorage.getItem('medcheck_ai_model_weights')) || {};
+        let currentSessionMessages = [];
+        let healthChartInstance = null;
+
+        // Initialization
+        try {
+            lucide.createIcons();
+            loadProfileData();
+            renderHistory();
+            renderTrackerHistory(); // Added new Tracker History list
+            initChart(); // Added Chart instantiation
+
+            // Fallback: Manually bind profile button if onclick fails
+            const profileBtn = document.querySelector('button[onclick="showProfile()"]');
+            if (profileBtn) {
+                profileBtn.addEventListener('click', (e) => {
+                    console.log("Profile button clicked via EventListener");
+                    showProfile();
+                });
+            }
+        } catch (e) {
+            console.error("Initialization error:", e);
+        }
+
+        // View Transitions
+        function hideAllViews() {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+        }
+
+        function showLanding() {
+            hideAllViews();
+            views.landing.classList.remove('hidden');
+        }
+
+        function showDisclaimer() {
+            hideAllViews();
+            views.disclaimer.classList.remove('hidden');
+        }
+
+        function showTracker() {
+            hideAllViews();
+            views.tracker.classList.remove('hidden');
+            lucide.createIcons();
+            renderTrackerHistory();
+            updateChart();
+        }
+
+        function showProfile() {
+            console.log("showProfile called");
+            loadProfileData(); // Reset UI state to matched saved profile before opening
+            renderHistory();
+            const modal = document.getElementById('view-profile');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.setProperty('display', 'flex', 'important');
+                console.log("Modal display style forced to flex");
+            } else {
+                console.error("Profile modal element 'view-profile' NOT found in DOM");
+            }
+        }
+
+        function closeProfile() {
+            const modal = document.getElementById('view-profile');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+            // Discard unsaved changes
+            const savedProfile = localStorage.getItem('medcheck_profile');
+            if (savedProfile) {
+                userProfile = JSON.parse(savedProfile);
+            } else {
+                userProfile = {
+                    name: '', gender: 'Unspecified', age: '18-35', conditions: [],
+                    isPregnant: false, meds: '', allergies: '',
+                    lifestyle: { smoking: 'Never', alcohol: 'Never', sleep: '6-8h' }
+                };
+            }
+        }
+
+        function switchProfileTab(tab) {
+            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            const selectedTab = document.querySelector(`.profile-tab[onclick="switchProfileTab('${tab}')"]`);
+            if (selectedTab) selectedTab.classList.add('active');
+
+            document.getElementById(`profile-tab-${tab}`).classList.add('active');
+        }
+
+        function togglePregnancyUI() {
+            const gender = document.getElementById('profile-gender').value;
+            const ui = document.getElementById('pregnancy-ui');
+            if (['Female', 'Other', 'Private'].includes(gender)) {
+                ui.classList.remove('hidden');
+            } else {
+                ui.classList.add('hidden');
+                userProfile.isPregnant = false;
+            }
+        }
+
+        function setPregnancy(val) {
+            userProfile.isPregnant = val;
+            const btns = document.querySelectorAll('#pregnancy-ui .segment-btn');
+            btns[0].classList.toggle('active', val);
+            btns[1].classList.toggle('active', !val);
+        }
+
+        function setLifestyle(type, val) {
+            userProfile.lifestyle[type] = val;
+            const container = document.getElementById(`lifestyle-${type}`);
+            container.querySelectorAll('.segment-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(val.toLowerCase()));
+            });
+        }
+
+        function loadProfileData() {
+            document.getElementById('profile-name').value = userProfile.name || '';
+            document.getElementById('profile-gender').value = userProfile.gender || 'Unspecified';
+            document.getElementById('profile-age').value = userProfile.age || '18-35';
+
+            // Medical
+            document.getElementById('profile-meds').value = userProfile.meds || '';
+            document.getElementById('profile-allergies').value = userProfile.allergies || '';
+            const checkboxes = document.querySelectorAll('.condition-checkbox');
+            const savedConditions = userProfile.conditions || [];
+            checkboxes.forEach(cb => {
+                cb.checked = Array.isArray(savedConditions) && savedConditions.includes(cb.value);
+            });
+
+            // History & Lifestyle
+            if (!userProfile.lifestyle) {
+                userProfile.lifestyle = { smoking: 'Never', alcohol: 'Never', sleep: '6-8h' };
+            }
+            if (!userProfile.conditions) {
+                userProfile.conditions = [];
+            }
+            togglePregnancyUI();
+            setPregnancy(userProfile.isPregnant || false);
+            setLifestyle('smoking', userProfile.lifestyle?.smoking || 'Never');
+            setLifestyle('alcohol', userProfile.lifestyle?.alcohol || 'Never');
+            setLifestyle('sleep', userProfile.lifestyle?.sleep || '6-8h');
+        }
+
+        function saveProfile() {
+            const selectedConditions = [];
+            document.querySelectorAll('.condition-checkbox:checked').forEach(cb => {
+                selectedConditions.push(cb.value);
+            });
+
+            userProfile.name = document.getElementById('profile-name').value;
+            userProfile.gender = document.getElementById('profile-gender').value;
+            userProfile.age = document.getElementById('profile-age').value;
+            userProfile.conditions = selectedConditions;
+            userProfile.meds = document.getElementById('profile-meds').value;
+            userProfile.allergies = document.getElementById('profile-allergies').value;
+
+            localStorage.setItem('medcheck_profile', JSON.stringify(userProfile));
+            closeProfile();
+
+            const greeting = userProfile.name ? `Thanks ${userProfile.name}.` : "Profile updated.";
+            appendMessage('bot', `${greeting} I've updated your medical background and will factor it into our assessment.`);
+        }
+
+        function startChat() {
+            hideAllViews();
+            views.bodyMap.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function startChatFromMap() {
+            hideAllViews();
+            views.chat.classList.remove('hidden');
+            if (activeBodyPart) {
+                appendMessage('bot', `I've noted that the discomfort is in your **${activeBodyPart}**. Could you please describe what you're feeling there?`);
+            }
+        }
+
+        // Body Map Logic
+        let activeBodyPart = null;
+        function selectBodyPart(part) {
+            document.querySelectorAll('.body-part').forEach(p => p.classList.remove('selected'));
+            const el = document.getElementById(`body-${part.toLowerCase().replace(' ', '-')}`);
+            if (el) el.classList.add('selected');
+
+            activeBodyPart = part;
+            document.getElementById('selected-part-label').textContent = `Selected: ${part}`;
+
+            const nextBtn = document.getElementById('btn-map-next');
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        // Voice Logic
+        let recognition = null;
+        let isListening = false;
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                userInput.value = text;
+                toggleVoice();
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                toggleVoice();
+            };
+        }
+
+        function toggleVoice() {
+            if (!recognition) {
+                alert("Speech recognition is not supported in your browser.");
+                return;
+            }
+
+            const voiceBtn = document.getElementById('voice-btn');
+            if (isListening) {
+                recognition.stop();
+                isListening = false;
+                voiceBtn.classList.remove('text-red-600', 'voice-active');
+            } else {
+                recognition.start();
+                isListening = true;
+                voiceBtn.classList.add('text-red-600', 'voice-active');
+            }
+        }
+
+        // Safety & Emergency Risk Constants
+        const SAFETY_RESOURCES = {
+            EMERGENCY_RED_FLAGS: [
+                'chest pain', 'cannot breathe', 'shortness of breath', 'heart attack',
+                'stroke', 'unconscious', 'bleeding heavily', 'paralysis', 'fainting', 'seizure'
+            ],
+            SELF_HARM_KEYWORDS: [
+                'suicide', 'kill myself', 'want to die', 'end it all', 'self harm'
+            ],
+            PEDIATRIC_RED_FLAGS: [
+                'floppy', 'won\'t wake up', 'blue lips', 'seizure', 'hard to wake', 'fever in infant'
+            ],
+            ELDERLY_RED_FLAGS: [
+                'fall', 'sudden confusion', 'sudden weakness', 'slurred speech'
+            ]
+        };
+
+        function analyzeEmergencies(currentText, fullContextText, userProfile) {
+            const contextLow = fullContextText.toLowerCase();
+            const textLow = currentText.toLowerCase();
+
+            // 1. Absolute Emergencies (Immediate Keywords)
+            if (SAFETY_RESOURCES.EMERGENCY_RED_FLAGS.some(k => textLow.includes(k))) {
+                return { type: 'emergency', reason: 'Critical emergency keywords detected.' };
+            }
+
+            // 2. Self-Harm
+            if (SAFETY_RESOURCES.SELF_HARM_KEYWORDS.some(k => textLow.includes(k))) {
+                return { type: 'self_harm', reason: 'Self-harm keywords detected.' };
+            }
+
+            // 3. Pediatric Risk
+            if (userProfile.age === '0-17' && SAFETY_RESOURCES.PEDIATRIC_RED_FLAGS.some(k => textLow.includes(k))) {
+                return { type: 'pediatric_risk', reason: 'High-risk pediatric symptoms detected.' };
+            }
+
+            // 4. Elderly Risk
+            if (userProfile.age === '65+' && SAFETY_RESOURCES.ELDERLY_RED_FLAGS.some(k => textLow.includes(k))) {
+                return { type: 'elderly_risk', reason: 'High-risk elderly symptoms detected.' };
+            }
+
+            // 5. Red Flag Clusters (Context-Aware Multi-Symptom Analysis)
+            const conditions = Array.isArray(userProfile.conditions) ? userProfile.conditions.map(c => c.toLowerCase()) : [];
+            const fullText = currentText + " " + fullContextText;
+            const normalized = fullText.toLowerCase();
+
+            // 1. Cluster-level Severe Emergencies (Combinations)
+            const hasCardiacHistory = userProfile?.conditions?.includes('Heart Disease') || false;
+            const matchesSevereChest = normalized.includes('sever') && (normalized.includes('crushing') || normalized.includes('tearing') || normalized.includes('pressure') || normalized.includes('chest'));
+            const hasRadiation = normalized.includes('arm') || normalized.includes('jaw') || normalized.includes('radiat');
+            const hasSOB = normalized.includes('breath') || normalized.includes('shortness');
+            const hasSweating = normalized.includes('sweat') || normalized.includes('diaphor');
+
+            if (normalized.includes('chest') && (normalized.includes('pain') || normalized.includes('pressure'))) {
+                if (matchesSevereChest || hasRadiation || hasSOB || hasSweating || hasCardiacHistory) {
+                    return { type: 'cluster_emergency', cluster: 'Cardiopulmonary', reason: 'You are describing severe chest symptoms that could indicate a heart attack or pulmonary embolism. Please call emergency services (e.g., 911) or go to the nearest emergency room immediately. Do not drive yourself.' };
+                }
+            }
+
+            // --- NEUROLOGICAL CLUSTER ---
+            const hasHeadache = contextLow.includes('headache') || contextLow.includes('head pain');
+            const isSevereSudden = contextLow.includes('severe') || contextLow.includes('sudden') || contextLow.includes('worst headache');
+            const hasNeckStiffness = contextLow.includes('stiff neck') || contextLow.includes('neck stiffness') || contextLow.includes('neck pain');
+            const hasConfusion = contextLow.includes('confus') || contextLow.includes('dizzy') || contextLow.includes('can\'t think');
+
+            if ((hasHeadache && isSevereSudden && hasNeckStiffness) || (hasHeadache && hasConfusion) || contextLow.includes('worst headache of my life')) {
+                return {
+                    type: 'cluster_emergency',
+                    cluster: 'Neurological',
+                    reason: '⚠️ **URGENT NEUROLOGICAL WARNING**: The rapid onset of a severe headache combined with neck stiffness or changes in your mental state (confusion) can indicate a critical neurological emergency, such as bleeding in the brain or meningitis. Seek immediate emergency medical care.'
+                };
+            }
+
+            // --- INFECTIOUS CLUSTER ---
+            const hasFever = contextLow.includes('fever') || contextLow.includes('high temp');
+            const hasLowUrine = contextLow.includes('urine') || contextLow.includes('pee') || contextLow.includes('dehydrat');
+
+            if (hasFever && hasConfusion && hasLowUrine && userProfile.age === '65+') {
+                return {
+                    type: 'cluster_emergency',
+                    cluster: 'Infectious',
+                    reason: '⚠️ **URGENT INFECTION WARNING**: In older adults, the combination of fever, confusion, and potential dehydration (low urine output) strongly points to a severe systemic infection (sepsis). This is a medical emergency requiring rapid treatment.'
+                };
+            }
+
+            return null; // Safe to proceed to standard triage
+        }
+
+        function showEmergencyAlert() {
+            document.getElementById('view-emergency-alert').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeEmergencyAlert() {
+            document.getElementById('view-emergency-alert').classList.add('hidden');
+        }
+
+        // AI Intelligence Models & Databases
+        const SEASONAL_RISKS = {
+            'Winter': { 'Viral Infection (Flu/COVID)': 20, 'Bronchitis': 15, 'Common Cold': 10, 'Norovirus': 10 },
+            'Spring': { 'Allergies': 25, 'Asthma exacerbation': 15 },
+            'Summer': { 'Dehydration': 20, 'Heat Exhaustion': 15, 'Lyme Disease': 15, 'Food Poisoning': 10 },
+            'Fall': { 'Viral Infection (Flu/COVID)': 15, 'Allergies': 10, 'Bronchitis': 10 }
+        };
+
+        function getCurrentSeason() {
+            const month = new Date().getMonth() + 1; // 1-12
+            if (month >= 3 && month <= 5) return 'Spring';
+            if (month >= 6 && month <= 8) return 'Summer';
+            if (month >= 9 && month <= 11) return 'Fall';
+            return 'Winter';
+        }
+
+        // Chat Logic & AI Architecture
+        let activeSymptom = null;
+        let selectedSymptoms = [];
+        let isChatMode = false;
+        let conversationMemory = []; // Stores the full dialog context
+
+        chatForm.onsubmit = (e) => {
+            e.preventDefault();
+            const text = userInput.value.trim();
+
+            if (!text && selectedSymptoms.length > 0 && !isChatMode) {
+                startAIChat();
+                return;
+            }
+            if (!text) return;
+
+            if (isChatMode) {
+                processUserChatMessage(text);
+            } else {
+                initiateSymptomAdd(text);
+            }
+            userInput.value = '';
+        };
+
+        function initiateSymptomAdd(text) {
+            activeSymptom = { name: text, severity: 'mild', duration: 'Just started' };
+            document.getElementById('detail-symptom-name').textContent = `Details for: ${text}`;
+            document.getElementById('symptom-details-ui').classList.remove('hidden');
+            userInput.disabled = true;
+        }
+
+        function setDetailSeverity(sev) {
+            activeSymptom.severity = sev;
+            // Visual feedback
+            const btns = document.querySelectorAll('#symptom-details-ui .severity-btn');
+            btns.forEach(b => {
+                if (b.dataset.severity === sev) {
+                    b.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                    b.classList.remove('bg-white', 'text-slate-700');
+                } else {
+                    b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+                    b.classList.add('bg-white', 'text-slate-700');
+                }
+            });
+        }
+
+        function finishSymptomAdd() {
+            activeSymptom.duration = document.getElementById('detail-duration').value;
+            selectedSymptoms.push(activeSymptom);
+            renderSymptomTags();
+
+            document.getElementById('symptom-details-ui').classList.add('hidden');
+            userInput.disabled = false;
+            userInput.focus();
+            activeSymptom = null;
+
+            // Reset severity buttons
+            const btns = document.querySelectorAll('#symptom-details-ui .severity-btn');
+            btns.forEach(b => {
+                b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+                b.classList.add('bg-white');
+            });
+            // Reset duration dropdown
+            document.getElementById('detail-duration').value = 'Just started';
+        }
+
+        function renderSymptomTags() {
+            const container = document.getElementById('symptom-tags');
+            container.innerHTML = selectedSymptoms.map((s, idx) => `
+                <div class="symptom-tag severity-${s.severity}">
+                    <span>${s.name} (${s.duration})</span>
+                    <button type="button" onclick="removeSymptom(${idx})" class="ml-1 hover:text-red-500">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+
+            // update placeholder
+            userInput.placeholder = selectedSymptoms.length > 0 ? "Add another or press enter to analyze..." : "Describe your symptoms...";
+
+            // Update Analyze button state
+            const submitBtn = chatForm.querySelector('button[type="submit"]');
+            if (selectedSymptoms.length > 0) {
+                submitBtn.innerHTML = '<i data-lucide="activity" class="w-5 h-5"></i>';
+            } else {
+                submitBtn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i>';
+            }
+            lucide.createIcons();
+        }
+
+        function removeSymptom(index) {
+            selectedSymptoms.splice(index, 1);
+            renderSymptomTags();
+        }
+
+        function resetChat() {
+            chatMessages.innerHTML = `
+                <div class="flex gap-4 fade-in">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-blue-600">
+                        <i data-lucide="bot" class="w-4 h-4"></i>
+                    </div>
+                    <div class="message-bot glass-morphism p-4 rounded-2xl max-w-[85%] shadow-sm">
+                        <p class="text-sm leading-relaxed text-slate-700">Conversation reset. What seems to be the problem today?</p>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            selectedSymptoms = [];
+            conversationMemory = [];
+            isChatMode = false;
+            renderSymptomTags();
+            document.getElementById('symptom-details-ui').classList.add('hidden');
+        }
+
+        async function startAIChat() {
+            const summary = selectedSymptoms.map(s => `${s.severity} ${s.name} for ${s.duration}`).join(', ');
+            const initialMessage = `I have the following symptoms: ${summary}`;
+
+            isChatMode = true;
+            document.getElementById('symptom-tags').innerHTML = ''; // Clear tags from UI
+            userInput.placeholder = "Type your response to the AI...";
+            chatForm.querySelector('button[type="submit"]').innerHTML = '<i data-lucide="send" class="w-5 h-5"></i>';
+            lucide.createIcons();
+
+            await processUserChatMessage(initialMessage);
+        }
+
+        async function processUserChatMessage(text) {
+            appendMessage('user', text);
+            conversationMemory.push({ role: 'user', content: text });
+
+            // Lock Input
+            const submitBtn = chatForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            userInput.disabled = true;
+
+            showTypingIndicator();
+
+            // 1. Check Safety Engine First
+            const fullContextText = conversationMemory.map(m => m.content).join(' ');
+            const riskEvaluation = analyzeEmergencies(text, fullContextText, userProfile);
+
+            if (riskEvaluation) {
+                if (riskEvaluation.type === 'cluster_emergency') {
+                    removeTypingIndicator();
+                    showEmergencyAlert();
+                    streamMessage('bot', riskEvaluation.reason);
+                    renderDiagnosticResults(translateToUserResults(generateDiagnosticResults([{ name: `${riskEvaluation.cluster} Emergency Detected` }])));
+                    unlockChat();
+                    return;
+                } else if (riskEvaluation.type === 'emergency') {
+                    removeTypingIndicator();
+                    showEmergencyAlert();
+                    streamMessage('bot', `⚠️ **URGENT**: Based on your symptoms, you should seek immediate emergency medical care. Please call emergency services or go to the nearest ER right away.`);
+                    renderDiagnosticResults(translateToUserResults(generateDiagnosticResults([{ name: 'Emergency Risk Detected' }])));
+                    unlockChat();
+                    return;
+                } else if (riskEvaluation.type === 'self_harm') {
+                    removeTypingIndicator();
+                    streamMessage('bot', `🧡 **Your life has value and help is available.** Please know you are not alone. Please call or text the Suicide & Crisis Lifeline at **988** immediately.`);
+                    unlockChat();
+                    return;
+                } else if (riskEvaluation.type === 'pediatric_risk') {
+                    streamMessage('bot', `⚠️ **Pediatric Warning**: Infants and children with these symptoms require immediate evaluation by a pediatrician or pediatric ER.`);
+                } else if (riskEvaluation.type === 'elderly_risk') {
+                    streamMessage('bot', `⚠️ **Elderly Risk Warning**: Sudden confusion, falls, or severe weakness in older adults should be evaluated rapidly by a medical professional.`);
+                }
+            }
+
+            // 2. Hybrid Architecture First Pass: Rule Engine
+            const userTurns = conversationMemory.filter(msg => msg.role === 'user').length;
+            const ruleEngineResult = runRuleEngineFirstPass(text, userTurns);
+
+            // Process Rule Engine Extractions Instantly
+            if (ruleEngineResult.extracted_symptoms.length > 0) {
+                ruleEngineResult.extracted_symptoms.forEach(newSym => {
+                    if (!selectedSymptoms.some(s => s.name.toLowerCase() === newSym.name.toLowerCase())) {
+                        selectedSymptoms.push(newSym);
+                    }
+                });
+                renderSymptomTags();
+            }
+
+            let aiStatus = "assessing";
+            let aiText = "";
+
+            if (ruleEngineResult.direct_response) {
+                // Fast return from Rule Engine
+                aiText = ruleEngineResult.direct_response;
+                removeTypingIndicator();
+            } else {
+                // 3. Fallback to Generator LLM pass
+                let aiResponse = await fetchAIResponse(conversationMemory);
+                aiStatus = aiResponse.status;
+                aiText = aiResponse.response_text;
+                removeTypingIndicator();
+            }
+
+            if (aiStatus === "complete") {
+                streamMessage('bot', "Thank you. I have analyzed your entire conversation and medical profile. Here is a summary of potential causes and recommended next steps:");
+                renderDiagnosticResults(translateToUserResults(generateDiagnosticResults(selectedSymptoms)));
+                isChatMode = false; // End chat loop
+            } else {
+                conversationMemory.push({ role: 'assistant', content: aiText });
+                streamMessage('bot', aiText);
+            }
+
+            unlockChat();
+        }
+
+        function unlockChat() {
+            const submitBtn = chatForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            userInput.disabled = false;
+            userInput.focus();
+        }
+
+        function runRuleEngineFirstPass(latestMessage, userTurns) {
+            const response = {
+                extracted_symptoms: [],
+                direct_response: null
+            };
+
+            const lowerMsg = latestMessage.toLowerCase();
+
+            // Simple heuristic symptom extraction from natural language
+            if (lowerMsg.includes('cough') && !selectedSymptoms.some(s => s.name.toLowerCase().includes('cough'))) {
+                response.extracted_symptoms.push({ name: 'Cough', severity: 'moderate', duration: 'recent' });
+            }
+            if ((lowerMsg.includes('fever') || lowerMsg.includes('temperature')) && !selectedSymptoms.some(s => s.name.toLowerCase().includes('fever'))) {
+                response.extracted_symptoms.push({ name: 'Fever', severity: 'moderate', duration: 'recent' });
+            }
+            if (lowerMsg.includes('nausea') && !selectedSymptoms.some(s => s.name.toLowerCase().includes('nausea'))) {
+                response.extracted_symptoms.push({ name: 'Nausea', severity: 'mild', duration: 'recent' });
+            }
+
+            // Extract numeric temperature
+            const tempMatch = lowerMsg.match(/\b(9[5-9](?:\.\d)?|10[0-6](?:\.\d)?|3[5-9](?:\.\d)?|4[0-2](?:\.\d)?)\b/);
+            if (tempMatch && !selectedSymptoms.some(s => s.name.includes('Temp'))) {
+                const tempNum = parseFloat(tempMatch[1]);
+                let severity = 'mild';
+                if (tempNum >= 101.5 || (tempNum >= 38.6 && tempNum < 50)) severity = 'severe';
+                else if (tempNum >= 100.4 || (tempNum >= 38.0 && tempNum < 50)) severity = 'moderate';
+                response.extracted_symptoms.push({ name: `Body Temp: ${tempMatch[1]}°`, severity: severity, duration: 'current' });
+            }
+
+            if (userTurns > 2) {
+                // Return early so the LLM pass can output "status: complete"
+                return response;
+            }
+
+            // Static Follow-up Heuristics based on context
+            if (lowerMsg.includes('headache')) {
+                response.direct_response = "I understand you're experiencing a headache. To help me be more precise, could you tell me if the pain is throbbing, dull, or sharp, and if you have any changes in your vision or nausea?";
+            } else if (lowerMsg.includes('chest')) {
+                response.direct_response = "Chest pain is always important to evaluate carefully. Can you describe what the pain feels like (e.g., pressure, sharp, burning) and does it radiate anywhere like your arm or jaw?";
+            } else if (lowerMsg.includes('stomach') || lowerMsg.includes('abdom')) {
+                response.direct_response = "Abdominal pain can stem from many sources. Is the pain in one specific spot, like the lower right side, and has it gotten worse since it started?";
+            } else if (lowerMsg.includes('cough') || lowerMsg.includes('fever')) {
+                response.direct_response = "I've noted the fever and/or cough. Have you been able to take your body temperature? If so, what is it? Also, are you coughing up any colored mucus or experiencing shortness of breath?";
+            }
+
+            return response;
+        }
+
+        // --- MOCK GENERATIVE AI API ---
+        // Simulates passing a System Prompt + Conversation History to an LLM
+        async function fetchAIResponse(contextHistory) {
+            // Simulate network latency of hitting an inference endpoint
+            await new Promise(r => setTimeout(r, 1200 + Math.random() * 1000));
+
+            const userTurns = contextHistory.filter(msg => msg.role === 'user').length;
+
+            const response = {
+                response_text: "",
+                status: "assessing" // or "complete"
+            };
+
+            // After 2 user messages (the initial symptom + 1 follow-up response), provide diagnosis
+            if (userTurns > 2) {
+                response.status = "complete";
+                return response;
+            }
+
+            // Fallback dynamic responses asking for context (when Rule Engine has no static follow ups)
+            const dynamicResponses = [
+                "Could you describe if there is anything that makes these symptoms feel better or worse?",
+                "Are you experiencing any other unusual symptoms along with what you described, like fatigue or fever?",
+                `Given your profile indicates you are ${userProfile.age}, have you experienced anything similar to this in the past, or is this entirely new?`,
+                "Thank you for sharing that. On a scale of 1 to 10, how severe would you rate the discomfort right now?"
+            ];
+
+            response.response_text = dynamicResponses[Math.floor(Math.random() * dynamicResponses.length)];
+            return response;
+        }
+
+        function classifyOrganSystem(symptomsStr) {
+            const s = symptomsStr.toLowerCase();
+
+            // 1. Group symptoms by organ system and count base symptoms per system
+            const baseMatches = {
+                'Neurological': (s.match(/headache|dizz|confus|stiff neck|numb|vision/g) || []).length,
+                'Cardiovascular': (s.match(/chest|palpitat|\bheart\b|sweat|\barm\b|jaw/g) || []).length,
+                'Respiratory': (s.match(/cough|breath|wheez|sore throat/g) || []).length,
+                'Gastrointestinal': (s.match(/nausea|vomit|abdom|stomach|diarrhea|heartburn|sour taste|sour/g) || []).length,
+                'Urinary': (s.match(/urin|pee|flank/g) || []).length,
+                'Musculoskeletal': (s.match(/muscle|joint|back pain/g) || []).length,
+                'Systemic': (s.match(/fever|temp:\s*10|fatigue|weak/g) || []).length
+            };
+
+            const systemScores = {};
+            for (const sys in baseMatches) {
+                systemScores[sys] = baseMatches[sys];
+            }
+
+            // 2. Assign cluster strength modifiers
+            if (s.match(/severe chest|tearing/g)) systemScores['Cardiovascular'] += 2;
+            if (s.match(/worst headache|stiff neck/g)) systemScores['Neurological'] += 2;
+            if (s.includes('burn') && (s.includes('urin') || s.includes('pee'))) systemScores['Urinary'] += 2;
+            if (s.includes('sever') && s.includes('abdom')) systemScores['Gastrointestinal'] += 2;
+
+            // 3. Strict Scoring (Max 3)
+            // Strong cluster = 3+ related symptoms -> score 3
+            // Moderate cluster = 2 related symptoms -> score 2
+            // Weak cluster = 1 symptom -> score 1
+            for (const sys in systemScores) {
+                systemScores[sys] = Math.min(3, systemScores[sys]); // Cap at 3
+            }
+
+            // 4. Select Dominant System
+            let maxScore = 0;
+            let tiedSystems = [];
+
+            for (const [system, score] of Object.entries(systemScores)) {
+                if (system === 'Systemic') continue;
+
+                if (score > maxScore) {
+                    maxScore = score;
+                    tiedSystems = [system];
+                } else if (score === maxScore && score > 0) {
+                    tiedSystems.push(system);
+                }
+            }
+
+            let dominantSystem = 'General/Systemic';
+
+            if (maxScore > 0) {
+                if (tiedSystems.length === 1) {
+                    dominantSystem = tiedSystems[0];
+                } else {
+                    // 5. Tie-Breaker Logic
+                    const hasFever = s.includes('fever') || s.match(/temp:\s*(10[1-6])/);
+                    const hasPain = s.includes('pain') || s.includes('ache');
+
+                    let tieResolved = false;
+
+                    // Prefer system with fever
+                    if (hasFever) {
+                        const feverSystems = ['Urinary', 'Respiratory', 'Gastrointestinal'];
+                        for (const sys of tiedSystems) {
+                            if (feverSystems.includes(sys)) {
+                                dominantSystem = sys;
+                                tieResolved = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Prefer localized pain if fever didn't break tie
+                    if (!tieResolved && hasPain) {
+                        const painSystems = ['Musculoskeletal', 'Gastrointestinal', 'Neurological', 'Urinary', 'Cardiovascular'];
+                        for (const sys of tiedSystems) {
+                            if (painSystems.includes(sys)) {
+                                dominantSystem = sys;
+                                tieResolved = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Fallback to first if tie not broken logically
+                    if (!tieResolved) {
+                        // Pick the strongest system based on priority hierarchy
+                        const prioritySystems = ['Gastrointestinal', 'Cardiovascular', 'Neurological', 'Respiratory', 'Urinary', 'Musculoskeletal'];
+                        for (const pSys of prioritySystems) {
+                            if (tiedSystems.includes(pSys)) {
+                                dominantSystem = pSys;
+                                tieResolved = true;
+                                break;
+                            }
+                        }
+                        if (!tieResolved) dominantSystem = tiedSystems[0];
+                    }
+                }
+            }
+
+            // Urinary dominance override
+            const hasUrinaryFocus = s.includes('urin') || s.includes('pee') || s.includes('flank');
+            let hasHighFever = s.match(/temp:\s*(10[1-6](?:\.\d)?|38\.[3-9]|39\.\d|40\.\d)/) || s.includes('high fever');
+            if (hasUrinaryFocus && hasHighFever) {
+                dominantSystem = 'Urinary';
+            }
+
+            if (maxScore === 0 && systemScores['Systemic'] > 0) {
+                return { system: 'General/Systemic', score: systemScores['Systemic'] };
+            }
+
+            return { system: dominantSystem, score: maxScore };
+        }
+
+        function detectSymptomClusters(symptomsStr, primarySystem) {
+            const s = symptomsStr.toLowerCase();
+            let cluster = null;
+
+            const countSymptoms = (keywords) => {
+                let matches = 0;
+                keywords.forEach(kw => {
+                    if (s.includes(kw) || s.match(new RegExp(kw, 'i'))) matches++;
+                });
+                return matches;
+            };
+
+            // 5. Evaluate contextual red flags only within the assigned primary system
+            if (primarySystem === 'Urinary') {
+                const urinaryCount = countSymptoms(['fever', 'temp:\\s*(10[1-6])', 'flank', 'urin', 'pee']);
+                if (urinaryCount >= 2 && (s.includes('fever') || s.match(/temp:\s*(10[1-6])/))) {
+                    cluster = { name: 'Urinary/Renal Infection', count: urinaryCount };
+                }
+            } else if (primarySystem === 'Neurological') {
+                if ((s.includes('headache') && s.includes('stiff neck')) || s.includes('worst headache')) {
+                    cluster = { name: 'Neurological Emergency', count: countSymptoms(['headache', 'stiff neck', 'worst headache']) };
+                }
+            } else if (primarySystem === 'Cardiovascular') {
+                const hasCardiacHistory = window.userProfile?.conditions?.includes('Heart Disease') || false;
+                const matchesSevereChest = s.includes('sever') && (s.includes('crushing') || s.includes('tearing') || s.includes('pressure') || s.includes('chest'));
+                const hasRadiation = s.includes('arm') || s.includes('jaw') || s.includes('radiat');
+                const hasSOB = s.includes('breath') || s.includes('shortness');
+                const hasSweating = s.includes('sweat') || s.includes('diaphor');
+
+                if (s.includes('chest') && (matchesSevereChest || hasRadiation || hasSOB || hasSweating || hasCardiacHistory)) {
+                    cluster = { name: 'Cardiopulmonary', count: countSymptoms(['chest', 'breath', 'arm', 'sweat', 'palpitat', 'jaw', 'crushing']) };
+                }
+            } else if (primarySystem === 'Gastrointestinal') {
+                if (s.includes('abdom') && s.includes('sever')) {
+                    cluster = { name: 'Acute Abdomen', count: countSymptoms(['abdom', 'sever', 'vomit', 'nausea']) };
+                } else if (s.includes('heartburn') || s.includes('sour') || s.includes('acid')) {
+                    cluster = { name: 'Gastrointestinal Reflux', count: countSymptoms(['heartburn', 'sour', 'chest', 'stomach', 'acid']) };
+                }
+            } else if (primarySystem === 'Respiratory') {
+                if (countSymptoms(['cough', 'breath', 'wheez', 'sore throat', 'fever', 'chest']) >= 2 && (s.includes('cough') || s.includes('sore throat') || s.includes('breath'))) {
+                    cluster = { name: 'Respiratory Infection', count: countSymptoms(['cough', 'breath', 'wheez', 'sore throat', 'fever', 'chest']) };
+                }
+            }
+
+            // Fallbacks:
+            if (!cluster && (s.includes('pain') && !s.includes('headache') && !s.includes('muscle') && !s.includes('joint')) && (s.includes('fever') || s.match(/temp:\s*(10[1-6])/))) {
+                cluster = { name: 'Focal Localized Infection', count: countSymptoms(['pain', 'fever', 'temp:\\s*(10[1-6])']) };
+            }
+            if (!cluster && (s.includes('fatigue') || (s.includes('headache') && !s.includes('sever')))) {
+                cluster = { name: 'Non-specific Viral/Systemic', count: countSymptoms(['fatigue', 'headache', 'ache']) };
+            }
+
+            if (!cluster) {
+                // If it's a known primary system but didn't trigger a red flag, we shouldn't just say 'Unclassified'.
+                // Create a baseline system-specific cluster.
+                if (primarySystem === 'Gastrointestinal') {
+                    const baseCount = countSymptoms(['nausea', 'vomit', 'abdom', 'stomach', 'diarrhea', 'heartburn', 'sour taste', 'sour']);
+                    return { name: 'Gastrointestinal Distress', type: baseCount >= 2 ? 'moderate' : 'weak', maxConf: baseCount >= 2 ? 70 : 60, count: Math.max(1, baseCount) };
+                }
+                if (primarySystem === 'Respiratory') {
+                    const baseCount = countSymptoms(['cough', 'breath', 'wheez', 'sore throat']);
+                    return { name: 'Mild Respiratory Infection', type: baseCount >= 2 ? 'moderate' : 'weak', maxConf: baseCount >= 2 ? 70 : 60, count: Math.max(1, baseCount) };
+                }
+                if (primarySystem === 'Cardiovascular') {
+                    const baseCount = countSymptoms(['chest', 'breath', 'arm', 'sweat', 'palpitat', 'jaw', 'crushing', 'heart']);
+                    return { name: 'Cardiovascular Origin Unclear', type: baseCount >= 2 ? 'moderate' : 'weak', maxConf: baseCount >= 2 ? 70 : 60, count: Math.max(1, baseCount) };
+                }
+                if (primarySystem === 'Neurological') {
+                    const baseCount = countSymptoms(['headache', 'dizz', 'confus', 'stiff neck', 'numb', 'vision']);
+                    return { name: 'Neurological Origin Unclear', type: baseCount >= 2 ? 'moderate' : 'weak', maxConf: baseCount >= 2 ? 70 : 60, count: Math.max(1, baseCount) };
+                }
+                if (primarySystem === 'Urinary') {
+                    const baseCount = countSymptoms(['urin', 'pee', 'flank']);
+                    return { name: 'Urinary Origin Unclear', type: baseCount >= 2 ? 'moderate' : 'weak', maxConf: baseCount >= 2 ? 70 : 60, count: Math.max(1, baseCount) };
+                }
+                if (primarySystem === 'Musculoskeletal') {
+                    const baseCount = countSymptoms(['muscle', 'joint', 'back pain']);
+                    return { name: 'Musculoskeletal Origin Unclear', type: baseCount >= 2 ? 'moderate' : 'weak', maxConf: baseCount >= 2 ? 70 : 60, count: Math.max(1, baseCount) };
+                }
+                return { name: 'Unclassified', type: 'weak', maxConf: 45, count: 1 };
+            }
+
+            if (cluster.count >= 3) {
+                cluster.type = 'strong';
+                cluster.maxConf = 85;
+            } else if (cluster.count === 2) {
+                cluster.type = 'moderate';
+                cluster.maxConf = 70;
+            } else {
+                cluster.type = 'weak';
+                cluster.maxConf = 45;
+            }
+
+            return cluster;
+        }
+
+        function generateDiagnosticResults(symptomsList) {
+            const text = symptomsList.map(s => s.name).join(' ').toLowerCase();
+
+            // 1. Organ System Selection
+            const primarySystemResult = classifyOrganSystem(text);
+            let primarySystem = primarySystemResult.system;
+            const primarySystemScore = primarySystemResult.score;
+
+            // 2. Contextual Cluster Detection (Red Flags evaluated contextually inside)
+            const cluster = detectSymptomClusters(text, primarySystem);
+
+            // 3. Risk Stratification & Red Flag Tiers
+            let risk = 'low';
+            let redFlagLevel = 'none';
+            const isSmoker = userProfile.lifestyle?.smoking === 'Frequent';
+            const hasDiabetes = userProfile.conditions.includes('Diabetes');
+            const hasHeartDisease = userProfile.conditions.includes('Heart Disease');
+            const hasKidneyDisease = userProfile.conditions.includes('Kidney Disease');
+            const isImmuneSuppressed = userProfile.conditions.includes('Immune Suppression');
+            const hasHypertension = userProfile.conditions.includes('Hypertension');
+
+            // Chronic Disease Weighting
+            let chronicHighRisk = false;
+            if ((hasDiabetes || hasHeartDisease || hasHypertension) && (primarySystem === 'Cardiovascular' || primarySystem === 'Neurological')) chronicHighRisk = true;
+            if ((hasDiabetes || hasKidneyDisease) && primarySystem === 'Urinary') chronicHighRisk = true;
+            if (isImmuneSuppressed) chronicHighRisk = true; // Immune suppression is broad risk
+
+            // Check for explicit high fever >= 101F (Low grade 100-100.9 does not trigger this)
+            const hasHighFever = text.match(/temp:\s*(10[1-6](?:\.\d)?|38\.[3-9]|39\.\d|40\.\d)/) !== null;
+
+            // Evaluate Strict Escalation Rules for URGENT
+            // A) Strong cluster + fever >= 101F
+            const ruleA = cluster.type === 'strong' && hasHighFever;
+            // B) Major red flag symptom
+            const ruleB = cluster.name === 'Neurological Emergency' || cluster.name === 'Cardiopulmonary' || cluster.name === 'Acute Abdomen';
+            // C) Known high-risk chronic disease + moderate cluster
+            const ruleC = chronicHighRisk && (cluster.type === 'moderate' || cluster.type === 'strong');
+            // D) Rapid worsening symptom
+            const ruleD = text.includes('sudden') || text.includes('rapidly worsening') || text.includes('worst');
+
+            if (ruleA || ruleB || ruleC || ruleD) {
+                risk = 'urgent';
+                redFlagLevel = 'major';
+            } else if (chronicHighRisk || cluster.type === 'moderate' || text.includes('sever') || text.includes('moderat') || (text.includes('pain') && cluster.type !== 'weak')) {
+                // Moderate escalation if not urgent
+                risk = 'medium';
+                redFlagLevel = 'minor';
+            }
+
+            // 4. Conditions & Confidence Generation (applying constraints)
+            let topConditionName = 'Indeterminate Presentation';
+            let topConditionConf = 40;
+            let reasoning = "";
+            let baseConf = cluster.maxConf;
+
+            const hasRespiratorySymptoms = text.includes('cough') || text.includes('breath') || text.includes('chest') || text.includes('sore throat');
+
+            if (cluster.name === 'Urinary/Renal Infection') {
+                topConditionName = 'Pyelonephritis (Kidney Infection)';
+                topConditionConf = Math.min(baseConf, 85);
+                reasoning = "The combination of fever and localized urinary symptoms strongly indicates an upper urinary tract infection. Viral causes are extremely unlikely given this focal presentation.";
+            } else if (cluster.name === 'Cardiopulmonary') {
+                topConditionName = 'Acute Coronary Syndrome';
+                topConditionConf = Math.min(baseConf, isSmoker || hasHypertension ? 85 : 78);
+                reasoning = "Chest pain accompanied by shortness of breath or radiating symptoms is a severe cardiopulmonary red flag requiring immediate rule-out of severe ischemia.";
+            } else if (cluster.name === 'Neurological Emergency') {
+                topConditionName = 'Meningitis / Encephalitis';
+                topConditionConf = Math.min(baseConf, 85);
+                reasoning = "Severe sudden head pain with meningeal signs (stiff neck) requires immediate evaluation for intracranial pathology.";
+            } else if (cluster.name === 'Acute Abdomen') {
+                topConditionName = 'Appendicitis';
+                topConditionConf = Math.min(baseConf, 75);
+                reasoning = "Severe abdominal pain requires surgical and imaging evaluation to rule out acute visceral inflammation.";
+            } else if (cluster.name === 'Focal Localized Infection') {
+                topConditionName = 'Focal Bacterial Infection (e.g. Abscess, Cellulitis)';
+                topConditionConf = Math.min(baseConf, 70);
+                reasoning = "The presence of fever accompanied by localized pain suggests a contained focal infection rather than a broad, non-specific viral illness.";
+            } else if (cluster.name === 'Gastrointestinal Reflux') {
+                topConditionName = 'Gastroesophageal Reflux Disease (GERD)';
+                topConditionConf = Math.min(baseConf, 70);
+                reasoning = "Symptoms indicate upper gastrointestinal discomfort and acid reflux, ruling out severe cardiopulmonary origins based on cluster dominance.";
+            } else if (cluster.name === 'Respiratory Infection' || (primarySystem === 'Respiratory' && !hasRespiratorySymptoms)) {
+                if (hasRespiratorySymptoms) {
+                    topConditionName = 'Viral Pneumonia / COVID-19';
+                    topConditionConf = Math.min(baseConf, 75);
+                    reasoning = "Fever and cough in the absence of focal abdominal severity suggests a lower respiratory tract viral infection.";
+                } else {
+                    topConditionName = 'Atypical Viral Pathogen';
+                    topConditionConf = 29;
+                    reasoning = "Respiratory focus is considered but heavily down-weighted (<30% confidence) due to the complete absence of cough, shortness of breath, chest pain, or sore throat.";
+                }
+            } else if (primarySystem === 'Neurological' && text.includes('headache')) {
+                topConditionName = 'Migraine';
+                topConditionConf = Math.min(baseConf, 60);
+                reasoning = "Headache without severe red flags or neurological deficits points to primary headache syndromes.";
+            } else {
+                if (cluster.name === 'Non-specific Viral/Systemic') {
+                    topConditionName = 'Undifferentiated Viral Syndrome';
+                    topConditionConf = Math.min(baseConf, 60);
+                    reasoning = "Symptoms align with a mild, non-specific viral or systemic response. No localized dominant organ system identified.";
+                } else {
+                    topConditionName = 'Indeterminate Presentation';
+                    topConditionConf = 40;
+                    reasoning = "The provided symptoms are weak and lack sufficient clustering to reach a confident diagnostic impression.";
+                }
+            }
+
+            // Re-calculate confidence bounds based on strict cluster strength bounds
+            if (cluster.type === 'strong') {
+                topConditionConf = Math.max(75, Math.min(85, topConditionConf));
+            } else if (cluster.type === 'moderate') {
+                // Strict rule for moderate clusters starts at exactly 65% base
+                let modConf = 65;
+                if (text.match(/fever|temp:\s*/)) modConf += 5;
+                if (text.match(/pain|ache|sore|burn/)) modConf += 5;
+
+                // Enforce strict ceiling of 75% for moderate clusters
+                topConditionConf = Math.min(75, modConf);
+            } else {
+                topConditionConf = Math.min(49, topConditionConf);
+            }
+
+            // Global safety cap
+            topConditionConf = Math.min(85, topConditionConf);
+
+            // ----------------------------------------------------------------
+            // 5. HARD LOCK RULE: If dominant system score >= 2, prevent flattening
+            // ----------------------------------------------------------------
+            if (primarySystemScore >= 2 || cluster.count >= 2) {
+                // Lock 1: Cannot revert to General/Systemic
+                // Handled implicitly by primarySystem remaining the chosen system from step 1
+                if (primarySystem === 'General/Systemic' && cluster.name !== 'Non-specific Viral/Systemic') {
+                    // Since we don't have systemScores here, fallback to a sensible default if somehow flattened
+                    primarySystem = 'Unknown';
+                }
+
+                // Lock 2: Cannot become Unclear or Indeterminate
+                const unclearNames = ['Unclear Condition', 'Indeterminate Presentation', 'Undifferentiated Viral Syndrome', 'Unclassified'];
+                if (unclearNames.includes(topConditionName)) {
+                    topConditionName = `${primarySystem} Origin Unclear`;
+                }
+
+                // Lock 3: Confidence cannot be < 60%
+                topConditionConf = Math.max(60, topConditionConf);
+            }
+
+            return {
+                risk_level: risk,
+                primary_system: primarySystem,
+                primary_condition_medical: topConditionName,
+                confidence: topConditionConf,
+                red_flag_level: redFlagLevel,
+                reasoning_summary: reasoning
+            };
+        }
+
+        function translateToUserResults(medicalJson) {
+            // Mappings to plain english, without dramatic language
+            const conditionMappings = {
+                'Pyelonephritis (Kidney Infection)': { name: 'Kidney Infection', explanation: 'An infection has likely reached your kidneys. It is important to treat this with medication so it clears up.', action: 'See a doctor within the next 24 hours.', watch: ['Worsening back pain', 'Higher fever', 'Inability to keep fluids down'] },
+                'Complicated UTI': { name: 'Urinary Tract Infection', explanation: 'You are experiencing a standard infection in your urinary system.', action: 'Visit a doctor or urgent care for a urine test and simple antibiotics.', watch: ['Fever developing', 'Back pain', 'Blood in urine'] },
+                'Acute Coronary Syndrome': { name: 'Heart Distress', explanation: 'The symptoms you described involving your chest are a serious warning sign that your heart may need help.', action: 'Please call emergency services or go to the emergency room right now. Do not drive yourself.', watch: ['Pain spreading to arm or jaw', 'Dizziness', 'Severe shortness of breath'] },
+                'Pulmonary Embolism': { name: 'Lung Issue', explanation: 'There may be a blockage in your lungs causing your breathing difficulty and pain.', action: 'Go to the emergency room immediately for a scan.', watch: ['Coughing up blood', 'Fainting', 'Worsening breathlessness'] },
+                'Meningitis / Encephalitis': { name: 'Head/Neck Infection', explanation: 'A secure head pain and stiff neck can indicate an infection around the brain or spine.', action: 'Go to the emergency room for an immediate evaluation.', watch: ['Confusion', 'Sensitivity to light', 'Inability to wake up'] },
+                'Subarachnoid Hemorrhage': { name: 'Brain Condition', explanation: 'A sudden, severe headache is a major warning sign that requires a scan of your head.', action: 'Call emergency services or go to the emergency room immediately.', watch: ['Vomiting', 'Weakness on one side', 'Slurred speech'] },
+                'Viral Pneumonia / COVID-19': { name: 'Chest Infection', explanation: 'You likely have a viral infection in your lungs causing the cough and fever.', action: 'Rest and drink fluids. See a doctor if your breathing becomes difficult.', watch: ['Shortness of breath at rest', 'Chest pain', 'Blue lips'] },
+                'Acute Bronchitis': { name: 'Chest Cold', explanation: 'The airways in your lungs are irritated, which is causing your cough.', action: 'Rest and avoid irritants like smoke.', watch: ['Fever lasting more than a few days', 'Coughing up blood', 'Wheezing'] },
+                'Appendicitis': { name: 'Appendix Inflammation', explanation: 'Your lower stomach pain strongly points to an irritated appendix.', action: 'Go to the emergency room right away.', watch: ['Pain suddenly stopping (could indicate burst)', 'High fever', 'Severe vomiting'] },
+                'Cholecystitis or Renal Colic': { name: 'Abdominal Blockage', explanation: 'You may have a small stone or swelling causing your severe belly pain.', action: 'Visit an emergency room or urgent care to relieve the pain and find the exact cause.', watch: ['Yellowing of skin/eyes', 'High fever', 'Inability to pass urine'] },
+                'Migraine': { name: 'Migraine Headache', explanation: 'You are having a strong headache, possibly with sensitivity to light or nausea.', action: 'Rest in a quiet, dark room and take your standard headache relief medication.', watch: ['New neurological symptoms', 'Worst headache of your life', 'Fever'] },
+                'Tension Headache': { name: 'Tension Headache', explanation: 'Your headache is likely caused by muscle tension or stress.', action: 'Rest, hydrate, and try over-the-counter pain relief.', watch: ['Changes in vision', 'Weakness', 'Pain changing to throbbing'] },
+                'Focal Bacterial Infection (e.g. Abscess, Cellulitis)': { name: 'Skin/Local Infection', explanation: 'You have a bacterial infection in a specific area causing localized pain and a fever.', action: 'See a doctor for an evaluation and likely an antibiotic prescription.', watch: ['Redness spreading rapidly', 'Red streaks on skin', 'Increasing fever'] },
+                'Inflamed Viscus': { name: 'Belly Inflammation', explanation: 'An area inside your abdomen is swollen and tender.', action: 'Go to urgent care or the emergency room for an exam and scan.', watch: ['Pain becoming unbearable', 'High fever', 'Unable to keep fluids down'] },
+                'Mild Respiratory Infection': { name: 'Mild Respiratory Infection', explanation: 'Your symptoms suggest a mild upper respiratory infection.', action: 'Rest, hydrate, and try over-the-counter cold relief.', watch: ['Difficulty breathing', 'High fever', 'Chest pain worsening'] },
+                'Gastrointestinal Distress': { name: 'Gastrointestinal Distress', explanation: 'Your abdominal symptoms suggest mild gastrointestinal irritation or infection.', action: 'Stay hydrated with clear fluids and eat bland foods.', watch: ['Severe pain', 'Inability to keep fluids down', 'High fever'] },
+                'Cardiovascular Origin Unclear': { name: 'Possible Heart Issue', explanation: 'Your symptoms involve the chest/heart area and require medical review to determine the exact cause.', action: 'See a healthcare provider for an evaluation of your heart.', watch: ['Severe chest pain', 'Shortness of breath', 'High fever'] },
+                'Neurological Origin Unclear': { name: 'Nervous System Issue', explanation: 'You are experiencing symptoms that map to the nervous system. A doctor can help find the cause.', action: 'Schedule an appointment for a physical examination.', watch: ['Worst headache of life', 'Vision loss', 'Confusion'] },
+                'Urinary Origin Unclear': { name: 'Urinary Tract Issue', explanation: 'Your symptoms suggest irritation or a possible mild infection in your urinary tract.', action: 'Drink plenty of water and follow up with a doctor for a urine test.', watch: ['Fever', 'Severe back pain', 'Blood in urine'] },
+                'Musculoskeletal Origin Unclear': { name: 'Muscle or Joint Pain', explanation: 'Your symptoms point to inflammation or strain in your muscles, joints, or bones.', action: 'Rest the affected area and consider over-the-counter pain relief.', watch: ['Inability to bear weight', 'Severe swelling', 'High fever'] },
+                'Undifferentiated Viral Syndrome': { name: 'Viral Illness', explanation: 'You are experiencing symptoms of a common, non-specific virus.', action: 'Get plenty of rest, stay hydrated, and monitor your symptoms.', watch: ['Difficulty breathing', 'Inability to drink fluids', 'Symptoms worsening after improving'] },
+                'Stress / Fatigue Related Illness': { name: 'Exhaustion', explanation: 'Your body is showing signs of severe fatigue and stress.', action: 'Focus on rest, hydration, and reducing stressful activities.', watch: ['Development of fever', 'Severe sharp pains', 'Chest pressure'] },
+                'Atypical Viral Pathogen': { name: 'Viral Infection', explanation: 'You have a mild viral infection that is causing your current symptoms.', action: 'Rest and drink fluids until you feel better.', watch: ['Difficulty breathing', 'High fever', 'Persistent vomiting'] },
+                'Indeterminate Presentation': { name: 'Unclear Condition', explanation: 'Your symptoms are mild and difficult to pin down to a specific cause right now.', action: 'Monitor how you feel over the next 24-48 hours and rest.', watch: ['Symptoms suddenly worsening', 'New severe pain', 'High fever developing'] }
+            };
+
+            const map = conditionMappings[medicalJson.primary_condition_medical] || {
+                name: medicalJson.primary_condition_medical,
+                explanation: 'We have analyzed your symptoms and have identified a potential cause based on your profile.',
+                action: 'Follow up with a healthcare provider for an exact diagnosis.',
+                watch: ['Worsening symptoms', 'New severe pain', 'Difficulty breathing']
+            };
+
+            const riskBanners = {
+                'urgent': { level: 'Urgent Attention Needed', msg: 'Please seek professional medical care promptly. Do not ignore these symptoms.' },
+                'medium': { level: 'Medium Concern', msg: 'Schedule an appointment with a doctor to discuss these symptoms.' },
+                'low': { level: 'Low Concern', msg: 'Monitor your symptoms at home. Rest and hydrate.' }
+            };
+
+            return {
+                severity_banner: {
+                    level: riskBanners[medicalJson.risk_level]?.level || 'Low Concern',
+                    short_message: riskBanners[medicalJson.risk_level]?.msg || 'Monitor your symptoms at home.'
+                },
+                primary_condition: {
+                    plain_name: map.name,
+                    confidence_percent: medicalJson.confidence
+                },
+                plain_explanation: map.explanation,
+                recommended_action: map.action,
+                watch_for: map.watch,
+                system_tag: medicalJson.primary_system,
+                medical_details: medicalJson.reasoning_summary,
+                // Pass raw fields for internal UI coloring if needed
+                _internal_risk: medicalJson.risk_level,
+                _internal_med_name: medicalJson.primary_condition_medical
+            };
+        }
+
+        function renderDiagnosticResults(results) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'results-card mt-6 fade-in';
+
+            const riskIcons = {
+                'urgent': 'alert-triangle',
+                'medium': 'info',
+                'low': 'shield-check'
+            };
+
+            const riskColors = {
+                'urgent': 'emergency',
+                'medium': 'moderate',
+                'low': 'low'
+            };
+            const internalRisk = riskColors[results._internal_risk] || 'low';
+
+            const currentId = Date.now(); // Unique ID for this result instance
+
+            wrapper.innerHTML = `
+                <div class="p-6 transition-all risk-${internalRisk}">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="${riskIcons[results._internal_risk] || 'info'}" class="w-8 h-8"></i>
+                            <div>
+                                <h3 class="text-xl font-bold uppercase">${results.severity_banner.level}</h3>
+                                <p class="text-xs opacity-90 uppercase tracking-widest font-bold">Severity Level</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-900 border border-slate-700 text-white shadow-xl shadow-slate-900/20 px-3 py-1 text-xs">
+                                <i data-lucide="activity" class="w-3 h-3 mr-1"></i> ${results.system_tag} System
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-sm font-medium mt-2">${results.severity_banner.short_message}</p>
+                </div>
+
+                <div class="p-6 bg-white space-y-6 text-slate-800">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Primary Condition</h4>
+                        </div>
+                        
+                        <div class="space-y-4 border border-blue-100 bg-blue-50/30 p-5 rounded-2xl relative overflow-hidden transition-all">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="pr-12">
+                                    <span class="text-xl font-black text-slate-800">${results.primary_condition.plain_name}</span>
+                                </div>
+                                <div class="flex flex-col items-end">
+                                    <span class="text-2xl font-black text-blue-600">${results.primary_condition.confidence_percent}%</span>
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Confidence</span>
+                                </div>
+                            </div>
+                            
+                            <p class="text-sm text-slate-700 font-medium leading-relaxed">${results.plain_explanation}</p>
+                            
+                            <div class="mt-4 flex items-center gap-2 text-indigo-700 font-bold bg-indigo-50 px-4 py-3 rounded-xl">
+                                <i data-lucide="arrow-right-circle" class="w-5 h-5 shrink-0"></i>
+                                <span>${results.recommended_action}</span>
+                            </div>
+
+                            ${results.watch_for && results.watch_for.length > 0 ? `
+                                <div class="mt-4 border-t border-blue-100 pt-4">
+                                    <h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Watch For:</h5>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${results.watch_for.map(w => `<span class="text-xs bg-red-50 text-red-700 border border-red-100 px-2 py-1 rounded-md"><i data-lucide="alert-circle" class="w-3 h-3 inline mr-1"></i>${w}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="confidence-bar-bg mt-4">
+                                <div class="confidence-bar-fill" style="width: 0%" id="conf-bar-${currentId}"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Professional Medical Details Toggle -->
+                    <div class="pt-4 border-t border-slate-100">
+                        <button onclick="toggleExplanation('${currentId}')" class="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-indigo-600 transition-colors">
+                            <i data-lucide="stethoscope" class="w-4 h-4"></i>
+                            View Professional Medical Details
+                        </button>
+                        <div id="explanation-${currentId}" class="hidden mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <p class="text-sm font-medium text-slate-600 leading-relaxed mb-2"><span class="font-bold text-slate-800">Clinical System Term:</span> ${results._internal_med_name}</p>
+                            <p class="text-sm font-medium text-slate-600 leading-relaxed"><span class="font-bold text-slate-800">Reasoning Summary:</span> ${results.medical_details}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- PDF Export and Continuous Learning Feedback UI -->
+                    <div class="pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between gap-4">
+                        <!-- AI Learning -->
+                        <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl flex-1 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div>
+                                <h5 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="brain" class="w-4 h-4 text-blue-500"></i> Reinforcement Learning Feedback</h5>
+                                <p class="text-xs text-slate-500 mt-1">Provide triage accuracy ground-truth for condition weighting.</p>
+                            </div>
+                            <div class="flex gap-2" id="feedback-btns-${currentId}">
+                                ${results._internal_med_name ? `
+                                    <button onclick="submitModelFeedback('${results._internal_med_name}', 1, 'feedback-btns-${currentId}')" class="p-2 bg-white border border-slate-200 rounded-lg hover:border-green-500 hover:text-green-600 transition-colors tooltip relative group">
+                                        <i data-lucide="thumbs-up" class="w-4 h-4"></i>
+                                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">Confirmed</span>
+                                    </button>
+                                    <button onclick="submitModelFeedback('${results._internal_med_name}', -1, 'feedback-btns-${currentId}')" class="p-2 bg-white border border-slate-200 rounded-lg hover:border-red-500 hover:text-red-600 transition-colors tooltip relative group">
+                                        <i data-lucide="thumbs-down" class="w-4 h-4"></i>
+                                        <span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block whitespace-nowrap">Refuted</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- PDF Export -->
+                        <div class="flex items-center justify-center sm:justify-end shrink-0">
+                            <button onclick="exportChatToPDF('pdf-export-btn-${currentId}')" id="pdf-export-btn-${currentId}" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-all shadow-sm shadow-blue-200 hover:shadow-md hover:shadow-blue-300">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Export Report</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 italic text-[10px] text-slate-400 text-center pdf-exclude">
+                        Simulated logic for educational purposes only.
+                    </div>
+                </div>
+            `;
+
+            chatMessages.appendChild(wrapper);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            lucide.createIcons();
+
+            setTimeout(() => {
+                const bar = document.getElementById(`conf-bar-${currentId}`);
+                if (bar) bar.style.width = `${results.primary_condition.confidence_percent}%`;
+            }, 100);
+        }
+
+        function toggleExplanation(id) {
+            const el = document.getElementById(`explanation-${id}`);
+            if (el) {
+                el.classList.toggle('hidden');
+            }
+        }
+
+        async function exportChatToPDF(btnId = 'pdf-export-btn') {
+            try {
+                // 1. Prepare UI for Export
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+
+                const originalBtnHtml = btn.innerHTML;
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating...`;
+                btn.disabled = true;
+                lucide.createIcons();
+
+                // Hide main input form so it doesn't appear in PDF
+                const inputForm = document.getElementById('chat-input-form');
+                if (inputForm) inputForm.style.display = 'none';
+
+                // Hide elements explicitly marked for exclusion
+                const excludedElements = document.querySelectorAll('.pdf-exclude');
+                excludedElements.forEach(el => el.style.display = 'none');
+
+                // 2. Select the content to export (the scrollable chat area)
+                const element = document.getElementById('chat-messages');
+
+                // 3. Configure html2pdf options
+                const dateStr = new Date().toISOString().split('T')[0];
+                const opt = {
+                    margin: [10, 10, 10, 10], // top, left, bottom, right
+                    filename: `MedCheck_Consultation_${dateStr}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                // 4. Generate and save
+                await html2pdf().set(opt).from(element).save();
+
+                // 5. Restore UI
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+                lucide.createIcons();
+
+                if (inputForm) inputForm.style.display = 'block';
+                excludedElements.forEach(el => el.style.display = '');
+
+            } catch (error) {
+                console.error("PDF Export failed:", error);
+                alert("Failed to generate PDF. Please try again.");
+            }
+        }
+
+        function submitModelFeedback(conditionName, direction, btnContainerId) {
+            // Adjust the continuous learning weight in local storage
+            if (!modelWeights[conditionName]) {
+                modelWeights[conditionName] = 0;
+            }
+
+            // Adjust by 5% confidence per feedback instance
+            modelWeights[conditionName] += (direction * 5);
+
+            // Cap the learning bounds to prevent runaway weights
+            modelWeights[conditionName] = Math.max(-25, Math.min(25, modelWeights[conditionName]));
+
+            localStorage.setItem('medcheck_ai_model_weights', JSON.stringify(modelWeights));
+
+            // Update UI to reflect submission
+            const container = document.getElementById(btnContainerId);
+            if (container) {
+                container.innerHTML = `<span class="text-xs font-bold text-green-600 flex items-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> AI Updated</span>`;
+                lucide.createIcons();
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex gap-4 ${sender === 'user' ? 'flex-row-reverse' : ''} fade-in`;
+
+            const iconHtml = sender === 'bot'
+                ? '<div class="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-blue-600"><i data-lucide="bot" class="w-4 h-4"></i></div>'
+                : '<div class="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-slate-600"><i data-lucide="user" class="w-4 h-4"></i></div>';
+
+            wrapper.innerHTML = `
+                ${iconHtml}
+                <div class="message-${sender} ${sender === 'bot' ? 'glass-morphism bg-white' : 'bg-blue-600 text-white'} p-4 rounded-2xl max-w-[85%] shadow-sm">
+                    <p class="text-sm leading-relaxed">${text}</p>
+                </div>
+            `;
+
+            chatMessages.appendChild(wrapper);
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            lucide.createIcons();
+
+            if (sender === 'user') {
+                currentSessionMessages.push({ role: sender, text: text, timestamp: new Date().toISOString() });
+            }
+        }
+
+        async function streamMessage(sender, text) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex gap-4 ${sender === 'user' ? 'flex-row-reverse' : ''} fade-in`;
+
+            const iconHtml = sender === 'bot'
+                ? '<div class="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-blue-600"><i data-lucide="bot" class="w-4 h-4"></i></div>'
+                : '<div class="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-slate-600"><i data-lucide="user" class="w-4 h-4"></i></div>';
+
+            wrapper.innerHTML = `
+                ${iconHtml}
+                <div class="message-${sender} ${sender === 'bot' ? 'glass-morphism bg-white streaming' : 'bg-blue-600 text-white'} p-4 rounded-2xl max-w-[85%] shadow-sm">
+                    <p class="text-sm leading-relaxed"></p>
+                </div>
+            `;
+
+            chatMessages.appendChild(wrapper);
+            const textElement = wrapper.querySelector('p');
+            const messageBox = wrapper.querySelector(`.message-${sender}`);
+
+            const words = text.split(' ');
+            for (let i = 0; i < words.length; i++) {
+                textElement.innerHTML += (i === 0 ? '' : ' ') + words[i];
+                chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'auto' });
+                await new Promise(r => setTimeout(r, 40 + Math.random() * 40));
+            }
+
+            messageBox.classList.remove('streaming');
+            chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            lucide.createIcons();
+
+            // Log bot message to current session
+            currentSessionMessages.push({ role: sender, text: text, timestamp: new Date().toISOString() });
+            saveSessionToHistory(); // Update current session in history
+        }
+
+        function saveSessionToHistory() {
+            if (currentSessionMessages.length < 2) return; // Don't save empty/initial-only sessions
+
+            const sessionTitle = currentSessionMessages.find(m => m.role === 'user')?.text.substring(0, 40) + "..." || "Health Check";
+            const sessionDate = new Date().toLocaleDateString();
+
+            const sessionId = localStorage.getItem('medcheck_active_session_id') || Date.now().toString();
+            localStorage.setItem('medcheck_active_session_id', sessionId);
+
+            const existingSessionIndex = history.findIndex(s => s.id === sessionId);
+            const sessionData = {
+                id: sessionId,
+                title: sessionTitle,
+                date: sessionDate,
+                fullDate: new Date().toLocaleString(),
+                messages: currentSessionMessages
+            };
+
+            if (existingSessionIndex >= 0) {
+                history[existingSessionIndex] = sessionData;
+            } else {
+                history.unshift(sessionData);
+            }
+
+            // Keep only last 10 sessions
+            if (history.length > 10) history = history.slice(0, 10);
+
+            localStorage.setItem('medcheck_history', JSON.stringify(history));
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('history-container');
+            const noHistory = document.getElementById('no-history');
+
+            if (!container || !noHistory) return;
+
+            if (history.length === 0) {
+                noHistory.classList.remove('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            noHistory.classList.add('hidden');
+            container.innerHTML = history.slice(0, 5).map(session => `
+                <div onclick="viewSessionSummary('${session.id}')" class="relative group flex-shrink-0 w-24 p-2 rounded-lg bg-white border border-slate-100 hover:border-blue-200 transition-all cursor-pointer">
+                    <button onclick="deleteSession('${session.id}', event)" class="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200 z-10" title="Delete Session">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                    <p class="text-[8px] font-bold text-slate-400 uppercase">${session.date}</p>
+                    <p class="text-[10px] font-medium text-slate-700 truncate">${session.title}</p>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function deleteSession(sessionId, event) {
+            if (event) event.stopPropagation();
+            if (!confirm("Are you sure you want to delete this chat session?")) return;
+
+            history = history.filter(s => s.id !== sessionId);
+            localStorage.setItem('medcheck_history', JSON.stringify(history));
+
+            renderHistory();
+            renderTrackerHistory(); // Update tracker view if it's rendered
+        }
+
+        function viewSessionSummary(sessionId) {
+            const session = history.find(s => s.id === sessionId);
+            if (!session) return;
+
+            const summary = session.messages.map(m => `**${m.role.toUpperCase()}**: ${m.text}`).join('\n\n');
+            alert(`Session from ${session.fullDate}\n\nSummary:\n${summary.substring(0, 500)}...`);
+        }
+
+        function showTypingIndicator() {
+            const wrapper = document.createElement('div');
+            wrapper.id = 'typing-indicator';
+            wrapper.className = 'flex gap-4 fade-in';
+            wrapper.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center text-blue-600">
+                    <i data-lucide="bot" class="w-4 h-4"></i>
+                </div>
+                <div class="glass-morphism p-4 rounded-2xl flex gap-1 items-center">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatMessages.appendChild(wrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) indicator.remove();
+        }
+        // Tracker UI Listeners (Placeholder for next steps)
+        const painSlider = document.getElementById('tracker-pain');
+        if (painSlider) {
+            painSlider.addEventListener('input', (e) => {
+                document.getElementById('tracker-pain-display').textContent = `Level: ${e.target.value}`;
+            });
+        }
+
+        // Tracker Logic & Logging
+        function getFormattedDate() {
+            const d = new Date();
+            return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function addFeverLog() {
+            const input = document.getElementById('tracker-fever');
+            const unit = document.getElementById('tracker-fever-unit').value;
+            if (!input.value) return;
+
+            // Convert to F internally for consistent plotting if C is logged
+            let tempF = parseFloat(input.value);
+            if (unit === 'C') {
+                tempF = (tempF * 9 / 5) + 32;
+            }
+
+            feverLogs.push({ date: getFormattedDate(), temp: tempF.toFixed(1), display: `${input.value}°${unit}` });
+            if (feverLogs.length > 7) feverLogs.shift(); // Keep last 7
+
+            localStorage.setItem('medcheck_fever_log', JSON.stringify(feverLogs));
+            input.value = '';
+
+            updateChart();
+            renderTrackerHistory();
+        }
+
+        function addPainLog() {
+            const slider = document.getElementById('tracker-pain');
+
+            painLogs.push({ date: getFormattedDate(), level: slider.value });
+            if (painLogs.length > 7) painLogs.shift();
+
+            localStorage.setItem('medcheck_pain_log', JSON.stringify(painLogs));
+
+            updateChart();
+            renderTrackerHistory();
+
+            // Visual feedback
+            const btn = document.querySelector('button[onclick="addPainLog()"]');
+            const ogText = btn.textContent;
+            btn.textContent = "Saved!";
+            btn.classList.add('bg-green-500');
+            setTimeout(() => {
+                btn.textContent = ogText;
+                btn.classList.remove('bg-green-500');
+            }, 2000);
+        }
+
+        function clearTrackerData() {
+            if (!confirm("Are you sure you want to clear all your logged temperature and pain data? This cannot be undone.")) return;
+
+            feverLogs = [];
+            painLogs = [];
+            localStorage.removeItem('medcheck_fever_log');
+            localStorage.removeItem('medcheck_pain_log');
+
+            updateChart();
+            renderTrackerHistory();
+
+            // Visual feedback
+            const btn = document.querySelector('button[onclick="clearTrackerData()"]');
+            if (btn) {
+                btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-500"></i>';
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
+                    lucide.createIcons();
+                }, 2000);
+            }
+        }
+
+        // Tracker History Logic
+        function renderTrackerHistory() {
+            const container = document.getElementById('tracker-history-list');
+            if (!container) return;
+
+            // Combine Chat history and manual logs for the list
+            let combined = [];
+
+            history.forEach(h => combined.push({ type: 'Assessment', id: h.id, date: h.fullDate, desc: h.title }));
+            feverLogs.forEach(f => combined.push({ type: 'Temperature', date: f.date, desc: `Recorded Temp: ${f.display}` }));
+            painLogs.forEach(p => combined.push({ type: 'Pain Level', date: p.date, desc: `Rated Severity: ${p.level}/10` }));
+
+            // Sort by date string (simple approximation for UI)
+            combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (combined.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400 italic">No previous assessments or logs found.</p>';
+                return;
+            }
+
+            container.innerHTML = combined.slice(0, 15).map(item => `
+                <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 relative group">
+                    <div class="mt-1 w-2 h-2 rounded-full flex-shrink-0 ${item.type === 'Temperature' ? 'bg-orange-400' : item.type === 'Pain Level' ? 'bg-rose-400' : 'bg-blue-400'}"></div>
+                    <div class="flex-grow pr-8">
+                        <p class="text-xs font-bold text-slate-800">${item.type} <span class="ml-2 font-normal text-slate-400">${item.date}</span></p>
+                        <p class="text-sm text-slate-600 mt-0.5">${item.desc}</p>
+                    </div>
+                    ${item.type === 'Assessment' ? `
+                    <button onclick="deleteSession('${item.id}', event)" class="absolute right-3 top-3 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete Assessment">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // Chart.js rendering
+        function initChart() {
+            const ctx = document.getElementById('healthChart');
+            if (!ctx) return;
+
+            Chart.defaults.font.family = "'Inter', 'Roboto', sans-serif";
+            Chart.defaults.color = '#94a3b8';
+
+            healthChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] }, // Initially empty
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6 } }
+                    },
+                    scales: {
+                        yFever: {
+                            type: 'linear', display: true, position: 'left',
+                            title: { display: true, text: 'Temperature (°F)', font: { size: 10 } },
+                            min: 96, max: 105
+                        },
+                        yPain: {
+                            type: 'linear', display: true, position: 'right',
+                            title: { display: true, text: 'Pain (1-10)', font: { size: 10 } },
+                            min: 0, max: 10,
+                            grid: { drawOnChartArea: false } // only draw grid for fever
+                        }
+                    }
+                }
+            });
+            updateChart();
+        }
+
+        function updateChart() {
+            if (!healthChartInstance) return;
+
+            // Create a unified 7-day timeline timeline
+            const labels = [];
+            const feverData = [];
+            const painData = [];
+
+            // Simple merging logic for demonstration
+            for (let i = 0; i < 7; i++) {
+                // If we have a fever log at index i, use it, else null
+                const fn = feverLogs[i];
+                const pn = painLogs[i];
+
+                if (fn || pn) {
+                    labels.push((fn ? fn.date : pn.date).split(' ')[0]); // Just date
+                    feverData.push(fn ? parseFloat(fn.temp) : null);
+                    painData.push(pn ? parseInt(pn.level) : null);
+                }
+            }
+
+            if (labels.length === 0) {
+                // Dummy empty state
+                labels.push('Today');
+            }
+
+            healthChartInstance.data.labels = labels;
+            healthChartInstance.data.datasets = [
+                {
+                    label: 'Fever (°F)',
+                    yAxisID: 'yFever',
+                    data: feverData,
+                    borderColor: '#f97316', // Orange
+                    backgroundColor: 'rgba(249, 115, 22, 0.8)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: 'Pain Level',
+                    yAxisID: 'yPain',
+                    data: painData,
+                    borderColor: '#f43f5e', // Rose
+                    backgroundColor: 'rgba(244, 63, 94, 0.8)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ];
+            healthChartInstance.update();
+        }
+
+        function generatePDFReport() {
+            const btn = document.querySelector('button[onclick="generatePDFReport()"]');
+            const ogHtml = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating...';
+            lucide.createIcons();
+
+            // 1. Fill Profile Data
+            const profileDataArr = [
+                { label: 'Name', val: userProfile.name || 'Not Provided' },
+                { label: 'Age', val: userProfile.age },
+                { label: 'Gender', val: userProfile.gender },
+                { label: 'Pregnancy Status', val: userProfile.isPregnant ? 'Yes' : 'No/N/A' },
+                { label: 'Chronic Conditions', val: userProfile.conditions.length ? userProfile.conditions.join(', ') : 'None' },
+                { label: 'Medications', val: userProfile.meds || 'None' },
+                { label: 'Allergies', val: userProfile.allergies || 'None' },
+                { label: 'Smoking', val: userProfile.lifestyle.smoking },
+                { label: 'Alcohol', val: userProfile.lifestyle.alcohol },
+                { label: 'Sleep', val: userProfile.lifestyle.sleep },
+                { label: 'Family History', val: userProfile.familyHistory || 'None' }
+            ];
+
+            const pContainer = document.getElementById('pdf-profile-data');
+            pContainer.innerHTML = profileDataArr.map(item => `
+                <div class="mb-2">
+                    <span class="font-bold text-slate-500 uppercase text-[10px] tracking-wider block">${item.label}</span>
+                    <span class="text-slate-800 font-medium">${item.val}</span>
+                </div>
+            `).join('');
+
+            // 2. Clone Chart to Image for PDF compatibility
+            const chartContainer = document.getElementById('pdf-chart-container');
+            if (healthChartInstance) {
+                const img = new Image();
+                img.src = healthChartInstance.toBase64Image();
+                img.className = 'w-full h-auto max-h-[250px] object-contain mx-auto';
+                chartContainer.innerHTML = '';
+                chartContainer.appendChild(img);
+            } else {
+                chartContainer.innerHTML = '<p class="text-sm italic text-slate-400">No chart data available.</p>';
+            }
+
+            // 3. Fill History Logs (Limit to last 10 for space)
+            const hContainer = document.getElementById('pdf-history-data');
+            const logsElement = document.getElementById('tracker-history-list').innerHTML;
+            hContainer.innerHTML = logsElement || '<p>No history available.</p>';
+
+            // Date
+            document.getElementById('pdf-date').textContent = new Date().toLocaleDateString();
+
+            // 4. Generate PDF
+            const element = document.getElementById('pdf-report-template');
+            element.classList.remove('hidden');
+            element.classList.remove('absolute');
+            element.classList.remove('top-[-9999px]');
+            element.classList.remove('left-[-9999px]');
+
+            const opt = {
+                margin: 0.5,
+                filename: `MedCheck_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Re-hide the template
+                element.classList.add('hidden');
+                element.classList.add('absolute');
+                element.classList.add('top-[-9999px]');
+                element.classList.add('left-[-9999px]');
+
+                btn.innerHTML = ogHtml;
+                lucide.createIcons();
+            });
+        }
+
+    </script>
+</body>
+
+</html>
