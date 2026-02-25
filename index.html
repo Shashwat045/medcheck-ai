@@ -35,8 +35,8 @@
             <span class="text-xl font-bold tracking-tight text-slate-800">MedCheck <span
                     class="text-blue-600">AI</span></span>
         </a>
-        <div class="hidden md:flex gap-6 text-sm font-medium text-slate-600">
-            <a href="#" class="hover:text-blue-600 transition-colors">How it works</a>
+        <div class="hidden md:flex gap-6 text-sm font-medium text-slate-600 flex-row items-center">
+            <button onclick="showHowItWorks()" class="hover:text-blue-600 transition-colors">How it works</button>
             <button id="nav-tracker-btn"
                 onclick="typeof showTracker === 'function' ? showTracker() : console.error('showTracker not defined')"
                 class="hover:text-blue-600 transition-colors flex items-center gap-1">
@@ -47,7 +47,7 @@
                 class="hover:text-blue-600 transition-colors flex items-center gap-1">
                 <i data-lucide="user-circle" class="w-4 h-4"></i> Profile
             </button>
-            <a href="#" class="hover:text-blue-600 transition-colors">Safety</a>
+            <button onclick="showSafety()" class="hover:text-blue-600 transition-colors">Safety</button>
         </div>
         <script>window.onerror = function (m, u, l) { console.log("GLOBAL ERROR:", m, "at", u, ":", l); };</script>
     </nav>
@@ -157,6 +157,100 @@
                     <button onclick="showLanding()" class="px-6 py-4 text-slate-500 font-medium hover:text-slate-800">
                         Cancel
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: How It Works Modal -->
+        <div id="view-how-it-works"
+            class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div
+                class="glass-morphism p-0 rounded-3xl w-full max-w-lg overflow-hidden fade-in shadow-2xl bg-white/95 flex flex-col max-h-[90vh]">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2"><i data-lucide="help-circle"
+                            class="w-5 h-5 text-blue-600"></i> How MedCheck works</h3>
+                    <button onclick="closeHowItWorks()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x"
+                            class="w-6 h-6"></i></button>
+                </div>
+                <div class="p-6 space-y-6 overflow-y-auto custom-scrollbar bg-white">
+                    <div class="flex gap-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 shadow-sm">
+                            1</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Describe Symptoms</h4>
+                            <p class="text-sm text-slate-500">Provide details about what you're feeling, including
+                                severity and duration.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 shadow-sm">
+                            2</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Answer AI Questions</h4>
+                            <p class="text-sm text-slate-500">Our medical AI will ask targeted follow-up questions to
+                                understand your condition better.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shrink-0 shadow-sm">
+                            3</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Get Triage Advice</h4>
+                            <p class="text-sm text-slate-500">Receive an analysis and a recommendation on whether to
+                                rest at home, see a doctor, or seek ER care.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-slate-100 bg-slate-50/50">
+                    <button onclick="closeHowItWorks()"
+                        class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md">Got
+                        it</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION: Safety & Privacy Modal -->
+        <div id="view-safety"
+            class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <div
+                class="glass-morphism p-0 rounded-3xl w-full max-w-lg overflow-hidden fade-in shadow-2xl bg-white/95 flex flex-col max-h-[90vh]">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2"><i data-lucide="shield-check"
+                            class="w-5 h-5 text-blue-600"></i> Safety & Privacy</h3>
+                    <button onclick="closeSafety()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x"
+                            class="w-6 h-6"></i></button>
+                </div>
+                <div
+                    class="p-6 space-y-5 overflow-y-auto custom-scrollbar text-slate-600 text-sm leading-relaxed bg-white">
+                    <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                        <h4 class="font-bold text-slate-800 mb-1 flex items-center gap-2"><i data-lucide="lock"
+                                class="w-4 h-4 text-blue-500"></i> Your Privacy is Priority</h4>
+                        <p>All symptom data and health history you enter is stored securely and locally on your device
+                            in this demo. It is not permanently stored on external servers without your future consent.
+                        </p>
+                    </div>
+                    <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                        <h4 class="font-bold text-slate-800 mb-1 flex items-center gap-2"><i data-lucide="brain-circuit"
+                                class="w-4 h-4 text-blue-500"></i> AI Limitations</h4>
+                        <p>MedCheck AI uses advanced generative models, but it is <strong>not a human doctor</strong>.
+                            It can make mistakes. The information provided is strictly for informational purposes and
+                            triaging.</p>
+                    </div>
+                    <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-100">
+                        <h4 class="font-bold text-amber-800 mb-1 flex items-center gap-2"><i
+                                data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i> When in Doubt</h4>
+                        <p>If you feel you are experiencing a life-threatening emergency, disregard all AI advice and
+                            <strong>call emergency services (112) immediately</strong>.
+                        </p>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-slate-100 bg-slate-50/50">
+                    <button onclick="closeSafety()"
+                        class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md">Accept
+                        & Close</button>
                 </div>
             </div>
         </div>
@@ -341,9 +435,9 @@
                         Please go to the nearest ER or call for help immediately.
                     </p>
                     <div class="pt-6 flex flex-col gap-3 w-full">
-                        <a href="tel:911"
+                        <a href="tel:112"
                             class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg flex items-center justify-center gap-2">
-                            <i data-lucide="phone" class="w-5 h-5"></i> Call 911 Now
+                            <i data-lucide="phone" class="w-5 h-5"></i> Call 112 Now
                         </a>
                         <button onclick="closeEmergencyAlert()"
                             class="w-full py-2 text-slate-500 font-medium hover:text-slate-800 transition-colors text-sm">
@@ -603,7 +697,9 @@
             bodyMap: document.getElementById('view-body-map'),
             chat: document.getElementById('view-chat'),
             profile: document.getElementById('view-profile'),
-            tracker: document.getElementById('view-health-tracker')
+            tracker: document.getElementById('view-health-tracker'),
+            howItWorks: document.getElementById('view-how-it-works'),
+            safety: document.getElementById('view-safety')
         };
         const chatMessages = document.getElementById('chat-messages');
         const chatForm = document.getElementById('chat-form');
@@ -668,6 +764,32 @@
             lucide.createIcons();
             renderTrackerHistory();
             updateChart();
+        }
+
+        function showHowItWorks() {
+            const modal = document.getElementById('view-how-it-works');
+            if (modal) {
+                modal.classList.remove('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        function closeHowItWorks() {
+            const modal = document.getElementById('view-how-it-works');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function showSafety() {
+            const modal = document.getElementById('view-safety');
+            if (modal) {
+                modal.classList.remove('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        function closeSafety() {
+            const modal = document.getElementById('view-safety');
+            if (modal) modal.classList.add('hidden');
         }
 
         function showProfile() {
@@ -910,7 +1032,7 @@
 
             if (normalized.includes('chest') && (normalized.includes('pain') || normalized.includes('pressure'))) {
                 if (matchesSevereChest || hasRadiation || hasSOB || hasSweating || hasCardiacHistory) {
-                    return { type: 'cluster_emergency', cluster: 'Cardiopulmonary', reason: 'You are describing severe chest symptoms that could indicate a heart attack or pulmonary embolism. Please call emergency services (e.g., 911) or go to the nearest emergency room immediately. Do not drive yourself.' };
+                    return { type: 'cluster_emergency', cluster: 'Cardiopulmonary', reason: 'You are describing severe chest symptoms that could indicate a heart attack or pulmonary embolism. Please call emergency services (e.g., 112) or go to the nearest emergency room immediately. Do not drive yourself.' };
                 }
             }
 
